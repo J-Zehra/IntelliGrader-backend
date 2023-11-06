@@ -16,15 +16,15 @@ def hello_world():
 
 @app.route('/process', methods=['POST'])
 def process_image():
-    if "image" not in request.files:
-        return "No Image File Provided", 400
+    if 'images' not in request.files:
+        return 'No images part in the request', 400
 
-    image = request.files["image"]
+    images = request.files.getlist('images')
     correct_answer = request.form.get("answer")
     correct_answer_indices = json.loads(correct_answer)
 
     # PROCESS IMAGE
-    result = utils.process(image, 5, correct_answer_indices)
+    result = utils.process(images[0], 5, correct_answer_indices)
 
     if result is None:
         return jsonify({"error": "Not all circles are detected"}), 500
