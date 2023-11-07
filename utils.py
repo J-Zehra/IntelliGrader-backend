@@ -23,6 +23,7 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # GET ROLL NUMBER
     roll_number = pytesseract.image_to_string(roll_number_section)
+    roll_number = int(roll_number)
 
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
     bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (5, 5), 1)
