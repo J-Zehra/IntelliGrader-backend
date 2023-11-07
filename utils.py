@@ -67,7 +67,8 @@ def process(image, number_of_choices, correct_answer_indices):
         "original_image": image_original,
         "answer_indices": answer_indices,
         "number_of_correct": number_of_correct,
-        "number_of_incorrect": number_of_incorrect
+        "number_of_incorrect": number_of_incorrect,
+        "roll_number": roll_number
     }
 
 

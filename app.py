@@ -23,21 +23,28 @@ def process_image():
     correct_answer = request.form.get("answer")
     correct_answer_indices = json.loads(correct_answer)
 
-    # PROCESS IMAGE
-    result = utils.process(images[0], 5, correct_answer_indices)
+    response_data = []
+    for image in images:
+        result = utils.process(image, 5, correct_answer_indices)
 
-    if result is None:
-        return jsonify({"error": "Not all circles are detected"}), 500
+        if result is None:
+            data = {"status": "invalid"}
+            response_data.append(data)
+            return
 
-    _, buffer = cv2.imencode(".jpg", result["processed_image"])
-    encoded_image = base64.b64encode(buffer).decode("utf-8")
+        _, buffer = cv2.imencode(".jpg", result["processed_image"])
+        encoded_image = base64.b64encode(buffer).decode("utf-8")
 
-    response_data = {
-        "processed_image": encoded_image,
-        "answer_indices": result["answer_indices"],
-        "number_of_correct": result["number_of_correct"],
-        "number_of_incorrect": result["number_of_incorrect"]
-    }
+        data = {
+            "status": "success",
+            "processed_image": encoded_image,
+            "answer_indices": result["answer_indices"],
+            "number_of_correct": result["number_of_correct"],
+            "number_of_incorrect": result["number_of_incorrect"],
+            "roll_number": result["roll_number"]
+        }
+
+        response_data.append(data)
 
     return jsonify(response_data), 200
 
