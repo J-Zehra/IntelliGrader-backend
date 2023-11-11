@@ -21,8 +21,8 @@ def process(image, number_of_choices, correct_answer_indices):
     # FIND LARGEST AND SECOND LARGEST RECTANGLE
     bubble_section, roll_number_section = find_area_of_interest(contours, image_copy)
 
-    # GET ROLL NUMBER
-    roll_number = pytesseract.image_to_string(roll_number_section)
+    # GET ROLL
+    roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
     roll_number = int(roll_number)
 
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
