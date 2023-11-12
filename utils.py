@@ -4,11 +4,8 @@ import pytesseract
 
 
 def process(image, number_of_choices, correct_answer_indices):
-    image_original = cv2.imdecode(np.fromstring(image.read(), np.uint8), cv2.IMREAD_COLOR)
-    image_copy = image_original.copy()
+    image_copy = image.copy()
     answer_indices = []
-    number_of_correct = 0
-    number_of_incorrect = 0
 
     # PREPROCESS IMAGE
     image_gray = cv2.cvtColor(image_copy, cv2.COLOR_BGR2GRAY)
@@ -43,7 +40,7 @@ def process(image, number_of_choices, correct_answer_indices):
 
         sorted_circles = sort_circles(circles, bubble_section)
 
-        for i in range(0, len(circles), 5):
+        for i in range(0, len(sorted_circles), 5):
             question_circles = sorted_circles[i:i + 5]
 
             for index, (x, y, r) in enumerate(question_circles):
@@ -60,12 +57,14 @@ def process(image, number_of_choices, correct_answer_indices):
                 else:
                     cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
 
-                cv2.putText(bubble_section, str(1 + i + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                cv2.putText(bubble_section, str(1 + i + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                             (225, 0, 0), 1)
+
+    number_of_correct, number_of_incorrect = check(answer_indices, correct_answer_indices)
 
     return {
         "processed_image": bubble_section,
-        "original_image": image_original,
+        "original_image": image,
         "answer_indices": answer_indices,
         "number_of_correct": number_of_correct,
         "number_of_incorrect": number_of_incorrect,
@@ -131,3 +130,16 @@ def get_shading_percentage(roi):
     # print(shading_percentage)
 
     return shading_percentage
+
+
+def check(extracted_answers, correct_answers):
+    number_of_correct = 0
+    number_of_incorrect = 0
+
+    for correct, student in zip(correct_answers, extracted_answers):
+        if correct == student:
+            number_of_correct += 1
+        else:
+            number_of_incorrect += 1
+
+    return number_of_correct, number_of_incorrect

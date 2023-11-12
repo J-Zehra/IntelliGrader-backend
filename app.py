@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import utils
 import cv2
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)
@@ -25,7 +26,8 @@ def process_image():
 
     response_data = []
     for image in images:
-        result = utils.process(image, 5, correct_answer_indices)
+        image_original = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
+        result = utils.process(image_original, 5, correct_answer_indices)
 
         if result is None:
             data = {"status": "invalid"}
