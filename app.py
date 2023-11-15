@@ -28,7 +28,7 @@ def process_image():
     response_data = []
     for image in images:
         image_original = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
-        result = utils.process(image_original, number_of_choices, correct_answer_indices)
+        result = utils.process(image_original, int(number_of_choices), correct_answer_indices)
 
         if result is None:
             data = {"status": "invalid"}
