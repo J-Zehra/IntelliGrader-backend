@@ -40,8 +40,8 @@ def process(image, number_of_choices, correct_answer_indices):
 
         sorted_circles = sort_circles(circles, bubble_section)
 
-        for i in range(0, len(sorted_circles), 5):
-            question_circles = sorted_circles[i:i + 5]
+        for i in range(0, len(sorted_circles), number_of_choices):
+            question_circles = sorted_circles[i:i + number_of_choices]
 
             for index, (x, y, r) in enumerate(question_circles):
                 roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
