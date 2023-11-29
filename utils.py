@@ -54,6 +54,7 @@ def process(image, number_of_choices, correct_answer_indices):
             print(shading_percentage)
 
             if shading_percentage > 60:
+                answer_indices.append(index)
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
             else:
                 cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
