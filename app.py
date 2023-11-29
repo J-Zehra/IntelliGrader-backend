@@ -24,11 +24,12 @@ def process_image():
     correct_answer = request.form.get("answer")
     number_of_choices = request.form.get("numberOfChoices")
     correct_answer_indices = json.loads(correct_answer)
+    number_of_choices_array = json.loads(number_of_choices)
 
     response_data = []
     for image in images:
         image_original = cv2.imdecode(np.frombuffer(image.read(), np.uint8), cv2.IMREAD_COLOR)
-        result = utils.process(image_original, int(number_of_choices), correct_answer_indices)
+        result = utils.process(image_original, number_of_choices_array, correct_answer_indices)
 
         if result is None:
             data = {"status": "invalid"}

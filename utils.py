@@ -8,9 +8,9 @@ def process(image, number_of_choices, correct_answer_indices):
     answer_indices = []
 
     # PREPROCESS IMAGE
-    image_gray = cv2.cvtColor(image_copy, cv2.COLOR_BGR2GRAY)
-    image_blur = cv2.GaussianBlur(image_gray, (5, 5), 1)
-    image_canny = cv2.Canny(image_blur, 10, 50)
+    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image_blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
+    image_canny = cv2.Canny(image_blur, 20, 75)
 
     # FIND ALL CONTOURS
     contours, _ = cv2.findContours(image_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -23,42 +23,43 @@ def process(image, number_of_choices, correct_answer_indices):
     roll_number = int(roll_number)
 
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
-    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (5, 5), 1)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (21, 21), 1)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=25, param1=125, param2=20, minRadius=5, maxRadius=15
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=20, minRadius=5, maxRadius=10
     )
 
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         number_of_circles = len(circles)
 
-        if number_of_circles is not (number_of_choices * len(correct_answer_indices)):
-            print(f"Detected {number_of_circles} circles")
-            return
+        # if number_of_circles is not (number_of_choices * len(correct_answer_indices)):
+        #     print(f"Detected {number_of_circles} circles")
+        #     return
 
-        sorted_circles = sort_circles(circles, bubble_section)
+        sorted_circles = sort_circles(circles, bubble_section, number_of_choices)
 
-        for i in range(0, len(sorted_circles), number_of_choices):
-            question_circles = sorted_circles[i:i + number_of_choices]
+        for index, (x, y, r) in enumerate(sorted_circles):
+            roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
+            roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
+            roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
 
-            for index, (x, y, r) in enumerate(question_circles):
-                roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
+            # shading_percentage = utils.get_shading_percentage(roi_thresh)
+            average_intensity = cv2.mean(roi_thresh)[0]
 
-                # Apply thresholding (you may need to fine-tune the threshold value)
-                _, binary_roi = cv2.threshold(roi_gray, 10, 255, cv2.THRESH_BINARY)
+            # shading_threshold = 100
 
-                shading_percentage = get_shading_percentage(binary_roi)
+            shading_percentage = (average_intensity / 255) * 100
+            print(shading_percentage)
 
-                if shading_percentage <= 75:
-                    answer_indices.append(index)
-                    cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
-                else:
-                    cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
+            if shading_percentage > 60:
+                cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
+            else:
+                cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
 
-                cv2.putText(bubble_section, str(1 + i + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (225, 0, 0), 1)
+            cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                        (225, 0, 0), 1)
 
     number_of_correct, number_of_incorrect = check(answer_indices, correct_answer_indices)
 
@@ -109,18 +110,48 @@ def find_area_of_interest(contours, image):
     return larger_section, smaller_section
 
 
-def sort_circles(circles, cropped_bubble_image):
-    first_column_circles = [circle for circle in circles if circle[0] < cropped_bubble_image.shape[1] / 2]
-    second_column_circles = [circle for circle in circles if circle[0] >= cropped_bubble_image.shape[1] / 2]
+def sort_circles(circles, cropped_bubble_image, number_of_choices):
+    choices_1 = number_of_choices[0]
+    choices_2 = number_of_choices[1]
+    choices_3 = number_of_choices[2]
+    choices_4 = number_of_choices[3]
 
-    # Sort each list based on y-coordinate (row order)
-    first_column_circles = sorted(first_column_circles, key=lambda circle: (circle[1], circle[0]))
-    second_column_circles = sorted(second_column_circles, key=lambda circle: (circle[1], circle[0]))
+    # Calculate the center of the image
+    center_x = cropped_bubble_image.shape[1] // 2
+    center_y = cropped_bubble_image.shape[0] // 2
 
-    # Concatenate the sorted lists to get the final order
-    sorted_circles = first_column_circles + second_column_circles
+    # Separate circles into four quadrants based on x and y coordinates
+    top_left_circles = [circle for circle in circles if circle[0] < center_x and circle[1] < center_y]
+    bottom_left_circles = [circle for circle in circles if circle[0] < center_x and circle[1] >= center_y]
+    top_right_circles = [circle for circle in circles if circle[0] >= center_x and circle[1] < center_y]
+    bottom_right_circles = [circle for circle in circles if circle[0] >= center_x and circle[1] >= center_y]
+
+    # Sort circles within each quadrant based on y-coordinate (row order) and then x-coordinate (column order)
+    top_left_circles = sorted(top_left_circles, key=lambda circle: (circle[1], circle[0]))
+    bottom_left_circles = sorted(bottom_left_circles, key=lambda circle: (circle[1], circle[0]))
+    top_right_circles = sorted(top_right_circles, key=lambda circle: (circle[1], circle[0]))
+    bottom_right_circles = sorted(bottom_right_circles, key=lambda circle: (circle[1], circle[0]))
+
+    # Sort the circles for each quadrant based on your specific sorting function (sort)
+    sorted_top_left = sort(choices_1, top_left_circles)
+    sorted_bottom_left = sort(choices_2, bottom_left_circles)
+    sorted_top_right = sort(choices_3, top_right_circles)
+    sorted_bottom_right = sort(choices_4, bottom_right_circles)
+
+    # Concatenate the sorted lists from each quadrant
+    sorted_circles = sorted_top_left + sorted_bottom_left + sorted_top_right + sorted_bottom_right
 
     return sorted_circles
+
+
+def sort(column, circles):
+    sorted_cols = []
+
+    for k in range(0, len(circles), column):
+        col = circles[k:k + column]
+        sorted_cols.extend(sorted(col, key=lambda v: v[0]))
+
+    return sorted_cols
 
 
 def get_shading_percentage(roi):
