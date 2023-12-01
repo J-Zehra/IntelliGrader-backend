@@ -38,29 +38,20 @@ def process(image, number_of_choices, correct_answer_indices):
         #     print(f"Detected {number_of_circles} circles")
         #     return
 
-        sorted_circles = sort_circles(circles, bubble_section, number_of_choices)
+        sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
+                                                                                                  bubble_section,
+                                                                                                  number_of_choices)
 
-        for index, (x, y, r) in enumerate(sorted_circles):
-            roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
-            roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
-            roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, number_of_choices[0], bubble_section_gray,
+                                                       bubble_section)
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, number_of_choices[1], bubble_section_gray,
+                                                       bubble_section)
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, number_of_choices[2], bubble_section_gray,
+                                                       bubble_section)
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, number_of_choices[3], bubble_section_gray,
+                                                       bubble_section)
 
-            # shading_percentage = utils.get_shading_percentage(roi_thresh)
-            average_intensity = cv2.mean(roi_thresh)[0]
-
-            # shading_threshold = 100
-
-            shading_percentage = (average_intensity / 255) * 100
-            print(shading_percentage)
-
-            if shading_percentage > 60:
-                answer_indices.append(index)
-                cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
-            else:
-                cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
-
-            cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
-                        (225, 0, 0), 1)
+        answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
     number_of_correct, number_of_incorrect = check(answer_indices, correct_answer_indices)
 
@@ -111,6 +102,37 @@ def find_area_of_interest(contours, image):
     return larger_section, smaller_section
 
 
+def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section):
+    answer_indices = []
+
+    for i in range(0, len(sorted_circles), number_of_choices):
+        question_circles = sorted_circles[i:i + number_of_choices]
+
+        for index, (x, y, r) in enumerate(question_circles):
+            roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
+            roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
+            roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
+
+            # shading_percentage = utils.get_shading_percentage(roi_thresh)
+            average_intensity = cv2.mean(roi_thresh)[0]
+
+            # shading_threshold = 100
+
+            shading_percentage = (average_intensity / 255) * 100
+            print(shading_percentage)
+
+            if shading_percentage > 60:
+                answer_indices.append(index)
+                cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
+            else:
+                cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
+
+            cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                        (225, 0, 0), 1)
+
+    return answer_indices
+
+
 def sort_circles(circles, cropped_bubble_image, number_of_choices):
     choices_1 = number_of_choices[0]
     choices_2 = number_of_choices[1]
@@ -142,7 +164,7 @@ def sort_circles(circles, cropped_bubble_image, number_of_choices):
     # Concatenate the sorted lists from each quadrant
     sorted_circles = sorted_top_left + sorted_bottom_left + sorted_top_right + sorted_bottom_right
 
-    return sorted_circles
+    return sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right
 
 
 def sort(column, circles):
