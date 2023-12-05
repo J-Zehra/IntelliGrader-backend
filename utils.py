@@ -23,11 +23,13 @@ def process(image, number_of_choices, correct_answer_indices):
     roll_number = int(roll_number)
 
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
-    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (21, 21), 1)
+    bubble_section_thresh = cv2.adaptiveThreshold(bubble_section_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                  cv2.THRESH_BINARY_INV, 41, 40)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section_thresh, (21, 21), 1)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=20, minRadius=5, maxRadius=10
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=15, minRadius=6, maxRadius=10
     )
 
     if circles is not None:
