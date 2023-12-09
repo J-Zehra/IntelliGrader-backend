@@ -29,7 +29,7 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=15, minRadius=6, maxRadius=10
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=10, minRadius=6, maxRadius=10
     )
 
     if circles is not None:
@@ -109,28 +109,35 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
 
     for i in range(0, len(sorted_circles), number_of_choices):
         question_circles = sorted_circles[i:i + number_of_choices]
+        shaded_index = -1
+        shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
             roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
             roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
 
-            # shading_percentage = utils.get_shading_percentage(roi_thresh)
             average_intensity = cv2.mean(roi_thresh)[0]
-
-            # shading_threshold = 100
-
             shading_percentage = (average_intensity / 255) * 100
+
             print(shading_percentage)
 
             if shading_percentage > 60:
-                answer_indices.append(index)
+                shaded_index = index
+                shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
             else:
                 cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
 
             cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
                         (225, 0, 0), 1)
+
+        if shading_count > 1:
+            answer_indices.append(-2)
+        elif shading_count == 1:
+            answer_indices.append(shaded_index)
+        else:
+            answer_indices.append(-1)
 
     return answer_indices
 
