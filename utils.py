@@ -29,16 +29,16 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=10, minRadius=6, maxRadius=10
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=12, minRadius=8, maxRadius=10
     )
 
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         number_of_circles = len(circles)
 
-        # if number_of_circles is not (number_of_choices * len(correct_answer_indices)):
-        #     print(f"Detected {number_of_circles} circles")
-        #     return
+        if number_of_circles is not (sum(choice * len(correct_answer_indices) for choice in number_of_choices)):
+            print(f"Detected {number_of_circles} circles")
+            return
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
