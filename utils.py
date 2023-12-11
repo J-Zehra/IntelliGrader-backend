@@ -29,7 +29,7 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=125, param2=12, minRadius=8, maxRadius=10
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=125, param2=10, minRadius=7, maxRadius=8
     )
 
     if circles is not None:
