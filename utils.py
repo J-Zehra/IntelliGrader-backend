@@ -109,8 +109,8 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
 
     for i in range(0, len(sorted_circles), number_of_choices):
         question_circles = sorted_circles[i:i + number_of_choices]
-        shading_count = 0
         shaded_index = -1
+        shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
@@ -120,19 +120,25 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
 
+            print(shading_percentage)
+
             if shading_percentage > 50:
                 shaded_index = index
                 shading_count += 1
+                cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
 
                 # Check if the shaded circle is correct
                 correct_answer = correct_answers[i + index]
                 if shaded_index == correct_answer:
-                    color = (0, 255, 0)  # Green for correct answers
+                    print(f"Question {i//number_of_choices + 1}, Choice {shaded_index + 1}: Correct")
                 else:
-                    color = (0, 0, 255)  # Red for incorrect answers
+                    print(f"Question {i//number_of_choices + 1}, Choice {shaded_index + 1}: Incorrect")
 
-                cv2.circle(bubble_section, (x, y), r, color, 2)
-                cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
+            else:
+                cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
+
+            cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                        (225, 0, 0), 1)
 
         if shading_count > 1:
             answer_indices.append(-2)
