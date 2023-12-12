@@ -36,7 +36,7 @@ def process(image, number_of_choices, correct_answer_indices):
         circles = np.round(circles[0, :]).astype("int")
         number_of_circles = len(circles)
 
-        if number_of_circles is not (sum(choice * len(correct_answer_indices) for choice in number_of_choices)):
+        if number_of_circles is not (sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices)):
             print(f"Detected {number_of_circles} circles")
             return
 
