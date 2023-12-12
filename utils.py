@@ -104,7 +104,7 @@ def find_area_of_interest(contours, image):
     return larger_section, smaller_section
 
 
-def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section, correct_answers):
+def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section):
     answer_indices = []
 
     for i in range(0, len(sorted_circles), number_of_choices):
@@ -126,14 +126,6 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
-
-                # Check if the shaded circle is correct
-                correct_answer = correct_answers[i + index]
-                if shaded_index == correct_answer:
-                    print(f"Question {i//number_of_choices + 1}, Choice {shaded_index + 1}: Correct")
-                else:
-                    print(f"Question {i//number_of_choices + 1}, Choice {shaded_index + 1}: Incorrect")
-
             else:
                 cv2.circle(bubble_section, (x, y), r, (0, 255, 0), 2)
 
