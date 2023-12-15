@@ -14,7 +14,7 @@ def process(image, number_of_choices, correct_answer_indices):
     image_canny = cv2.Canny(image_blur, 20, 75)
 
     # FIND ALL CONTOURS
-    contours, _ = cv2.findContours(image_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours, _ = cv2.findContours(image_canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # FIND LARGEST AND SECOND LARGEST RECTANGLE
     roll_number_section = find_roll_number_region(contours, image_copy)
@@ -28,16 +28,18 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=125, param2=12, minRadius=6, maxRadius=8
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=125, param2=10, minRadius=6, maxRadius=8
     )
 
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
-        number_of_circles = len(circles)
+        number_of_circles = int(len(circles))
+        detected_circles = int(sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices))
+        print(f"{number_of_circles} circles")
+        print(f"Detected {detected_circles} circles")
 
-        # if number_of_circles is not (sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices)):
-        #     print(f"Detected {number_of_circles} circles")
-        #     return
+        if number_of_circles != detected_circles:
+            return
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
