@@ -5,6 +5,7 @@ import pytesseract
 
 def process(image, number_of_choices, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
+    template_marker_2 = cv2.imread("marker2.png", 0)
     image_copy = image.copy()
     answer_indices = []
 
@@ -13,17 +14,13 @@ def process(image, number_of_choices, correct_answer_indices):
     image_blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
     image_canny = cv2.Canny(image_blur, 20, 75)
 
-    # FIND ALL CONTOURS
-    contours, _ = cv2.findContours(image_canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    # FIND LARGEST AND SECOND LARGEST RECTANGLE
-    roll_number_section = find_roll_number_region(contours, image_copy)
+    roll_number_section = extract_section(image_gray, template_marker_2)
 
     # GET ROLL
     roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
     roll_number = int(roll_number)
 
-    bubble_section = extract_bubble_section(image_gray, template_marker)
+    bubble_section = extract_section(image_gray, template_marker)
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
 
     # DETECT CIRCLES
@@ -34,7 +31,8 @@ def process(image, number_of_choices, correct_answer_indices):
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         number_of_circles = int(len(circles))
-        detected_circles = int(sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices))
+        detected_circles = int(
+            sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices))
         print(f"{number_of_circles} circles")
         print(f"Detected {detected_circles} circles")
 
@@ -68,8 +66,8 @@ def process(image, number_of_choices, correct_answer_indices):
     }
 
 
-def extract_bubble_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale_step=0.1):
-    bubble_section = None
+def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale_step=0.1):
+    section = None
 
     # Generate a range of scales
     scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
@@ -100,43 +98,9 @@ def extract_bubble_section(sample_image, template_marker, scale_range=(0.5, 2.0)
             max_x, max_y = np.max(detected_positions, axis=0)
 
             # Extract the region defined by the bounding box
-            bubble_section = sample_image[min_y:max_y, min_x:max_x]
+            section = sample_image[min_y:max_y, min_x:max_x]
 
-    return bubble_section
-
-
-def find_roll_number_region(contours, image):
-    smallest_rect = None
-    target_ratio = 1 / 3
-    min_area = float('inf')
-
-    # Iterate through detected contours
-    for contour in contours:
-        # Approximate the contour to a polygon
-        epsilon = 0.02 * cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, epsilon, True)
-
-        # Check if the polygon has 4 vertices (a rectangle)
-        if len(approx) == 4:
-            # Calculate the area of the rectangle
-            area = cv2.contourArea(contour)
-
-            # Calculate the bounding box for the rectangle
-            x, y, w, h = cv2.boundingRect(approx)
-
-            # Calculate the height-to-width ratio
-            ratio = h / w
-
-            # Update the smallest rectangle based on area and ratio
-            if area < min_area and abs(ratio - target_ratio) < 0.1:  # Adjust the tolerance as needed
-                min_area = area
-                smallest_rect = approx
-
-    # Crop the smallest rectangle
-    x, y, w, h = cv2.boundingRect(smallest_rect)
-    roll_number_section = image[y:y + h, x:x + w]
-
-    return roll_number_section
+    return section
 
 
 def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section):
