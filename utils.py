@@ -4,6 +4,7 @@ import pytesseract
 
 
 def process(image, number_of_choices, correct_answer_indices):
+    template_marker = cv2.imread("marker.png", 0)
     image_copy = image.copy()
     answer_indices = []
 
@@ -16,16 +17,14 @@ def process(image, number_of_choices, correct_answer_indices):
     contours, _ = cv2.findContours(image_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     # FIND LARGEST AND SECOND LARGEST RECTANGLE
-    bubble_section, roll_number_section = find_area_of_interest(contours, image_copy)
+    roll_number_section = find_roll_number_region(contours, image_copy)
 
     # GET ROLL
     roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
     roll_number = int(roll_number)
 
-    bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
-    bubble_section_thresh = cv2.adaptiveThreshold(bubble_section_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                  cv2.THRESH_BINARY_INV, 41, 40)
-    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (21, 21), 1)
+    bubble_section = extract_bubble_section(image_gray, template_marker)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
@@ -44,13 +43,13 @@ def process(image, number_of_choices, correct_answer_indices):
                                                                                                   bubble_section,
                                                                                                   number_of_choices)
 
-        part_1_answer_indices = extract_answer_indices(sorted_top_left, number_of_choices[0], bubble_section_gray,
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, number_of_choices[0], bubble_section,
                                                        bubble_section)
-        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, number_of_choices[1], bubble_section_gray,
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, number_of_choices[1], bubble_section,
                                                        bubble_section)
-        part_3_answer_indices = extract_answer_indices(sorted_top_right, number_of_choices[2], bubble_section_gray,
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, number_of_choices[2], bubble_section,
                                                        bubble_section)
-        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, number_of_choices[3], bubble_section_gray,
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, number_of_choices[3], bubble_section,
                                                        bubble_section)
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
@@ -67,11 +66,47 @@ def process(image, number_of_choices, correct_answer_indices):
     }
 
 
-def find_area_of_interest(contours, image):
-    largest_rect = None
-    second_largest_rect = None
-    max_area = 0
-    second_max_area = 0
+def extract_bubble_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale_step=0.1):
+    bubble_section = None
+
+    # Generate a range of scales
+    scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
+
+    for scale in scales:
+        # Resize the template at the current scale
+        resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
+
+        # Match the resized template with the sample image
+        result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
+
+        # Set a threshold to consider a match
+        threshold = 0.8
+        loc = np.where(result >= threshold)
+
+        # Get the coordinates of all the detected matches
+        detected_positions = []
+        for pt in zip(*loc[::-1]):
+            detected_positions.append(pt)
+
+        # If at least one match is found
+        if detected_positions:
+            # Convert to NumPy array for easier calculations
+            detected_positions = np.array(detected_positions)
+
+            # Compute the bounding box around all detected matches
+            min_x, min_y = np.min(detected_positions, axis=0)
+            max_x, max_y = np.max(detected_positions, axis=0)
+
+            # Extract the region defined by the bounding box
+            bubble_section = sample_image[min_y:max_y, min_x:max_x]
+
+    return bubble_section
+
+
+def find_roll_number_region(contours, image):
+    smallest_rect = None
+    target_ratio = 1 / 3
+    min_area = float('inf')
 
     # Iterate through detected contours
     for contour in contours:
@@ -84,24 +119,22 @@ def find_area_of_interest(contours, image):
             # Calculate the area of the rectangle
             area = cv2.contourArea(contour)
 
-            # Update the smaller and larger rectangles
-            if area > max_area:
-                second_max_area = max_area
-                max_area = area
-                second_largest_rect = largest_rect
-                largest_rect = approx
-            elif area > second_max_area:
-                second_max_area = area
-                second_largest_rect = approx
+            # Calculate the bounding box for the rectangle
+            x, y, w, h = cv2.boundingRect(approx)
 
-    # Crop the smaller and larger rectangles
-    x, y, w, h = cv2.boundingRect(second_largest_rect)
-    smaller_section = image[y:y + h, x:x + w]
+            # Calculate the height-to-width ratio
+            ratio = h / w
 
-    x, y, w, h = cv2.boundingRect(largest_rect)
-    larger_section = image[y:y + h, x:x + w]
+            # Update the smallest rectangle based on area and ratio
+            if area < min_area and abs(ratio - target_ratio) < 0.1:  # Adjust the tolerance as needed
+                min_area = area
+                smallest_rect = approx
 
-    return larger_section, smaller_section
+    # Crop the smallest rectangle
+    x, y, w, h = cv2.boundingRect(smallest_rect)
+    roll_number_section = image[y:y + h, x:x + w]
+
+    return roll_number_section
 
 
 def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section):
