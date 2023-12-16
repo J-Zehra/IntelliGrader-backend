@@ -11,16 +11,16 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # PREPROCESS IMAGE
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image_blur = cv2.GaussianBlur(image_gray, (5, 5), 0)
-    image_canny = cv2.Canny(image_blur, 20, 75)
 
     roll_number_section = extract_section(image_gray, template_marker_2)
 
     # GET ROLL
     roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
 
-    if roll_number:
+    try:
         roll_number = int(roll_number)
+    except ValueError:
+        print("Roll Number Not Detected")
 
     bubble_section = extract_section(image_gray, template_marker)
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
@@ -38,8 +38,8 @@ def process(image, number_of_choices, correct_answer_indices):
         print(f"{number_of_circles} circles")
         print(f"Detected {detected_circles} circles")
 
-        # if number_of_circles != detected_circles:
-        #     return
+        if number_of_circles != detected_circles:
+            return
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
