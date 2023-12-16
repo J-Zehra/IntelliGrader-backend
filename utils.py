@@ -43,13 +43,33 @@ def process(image, number_of_choices, correct_answer_indices):
                                                                                                   bubble_section,
                                                                                                   number_of_choices)
 
-        part_1_answer_indices = extract_answer_indices(sorted_top_left, number_of_choices[0], bubble_section,
+        try:
+            choices_1 = number_of_choices[0]
+        except IndexError:
+            choices_1 = 1
+
+        try:
+            choices_2 = number_of_choices[1]
+        except IndexError:
+            choices_2 = 1
+
+        try:
+            choices_3 = number_of_choices[2]
+        except IndexError:
+            choices_3 = 1
+
+        try:
+            choices_4 = number_of_choices[3]
+        except IndexError:
+            choices_4 = 1
+
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section,
                                                        bubble_section)
-        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, number_of_choices[1], bubble_section,
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section,
                                                        bubble_section)
-        part_3_answer_indices = extract_answer_indices(sorted_top_right, number_of_choices[2], bubble_section,
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section,
                                                        bubble_section)
-        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, number_of_choices[3], bubble_section,
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section,
                                                        bubble_section)
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
@@ -142,10 +162,25 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
 
 
 def sort_circles(circles, cropped_bubble_image, number_of_choices):
-    choices_1 = number_of_choices[0]
-    choices_2 = number_of_choices[1]
-    choices_3 = number_of_choices[2]
-    choices_4 = number_of_choices[3]
+    try:
+        choices_1 = number_of_choices[0]
+    except IndexError:
+        choices_1 = 1
+
+    try:
+        choices_2 = number_of_choices[1]
+    except IndexError:
+        choices_2 = 1
+
+    try:
+        choices_3 = number_of_choices[2]
+    except IndexError:
+        choices_3 = 1
+
+    try:
+        choices_4 = number_of_choices[3]
+    except IndexError:
+        choices_4 = 1
 
     # Calculate the center of the image
     center_x = cropped_bubble_image.shape[1] // 2
