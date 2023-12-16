@@ -18,7 +18,9 @@ def process(image, number_of_choices, correct_answer_indices):
 
     # GET ROLL
     roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
-    roll_number = int(roll_number)
+
+    if(roll_number):
+        roll_number = int(roll_number)
 
     bubble_section = extract_section(image_gray, template_marker)
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
