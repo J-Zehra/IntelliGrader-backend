@@ -6,7 +6,6 @@ import pytesseract
 def process(image, number_of_choices, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
-    image_copy = image.copy()
     answer_indices = []
 
     # PREPROCESS IMAGE
@@ -143,7 +142,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
 
             print(shading_percentage)
 
-            if shading_percentage > 50:
+            if shading_percentage > 40:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
