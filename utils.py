@@ -36,8 +36,8 @@ def process(image, number_of_choices, correct_answer_indices):
         print(f"{number_of_circles} circles")
         print(f"Detected {detected_circles} circles")
 
-        if number_of_circles != detected_circles:
-            return
+        # if number_of_circles != detected_circles:
+        #     return
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
