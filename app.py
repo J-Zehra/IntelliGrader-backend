@@ -22,7 +22,7 @@ def handle_connect():
 def generate_frames():
     stop_stream = False
     last_frame = None
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(1)
 
     while not stop_stream:
         success, frame = camera.read()
