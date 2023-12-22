@@ -3,6 +3,21 @@ import numpy as np
 import pytesseract
 
 
+def is_valid(image, number_of_choices, correct_answer_indices):
+    template_marker = cv2.imread("marker.png", 0)
+    template_marker_2 = cv2.imread("marker2.png", 0)
+
+    # PREPROCESS IMAGE
+    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    roll_number_section = extract_section(image_gray, template_marker_2)
+    bubble_section = extract_section(image_gray, template_marker)
+
+    if roll_number_section is not None and bubble_section is not None:
+        return False, image_gray, roll_number_section, bubble_section
+    else:
+        return True, image_gray, roll_number_section, bubble_section
+
+
 def process(image, number_of_choices, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
@@ -90,36 +105,42 @@ def process(image, number_of_choices, correct_answer_indices):
 def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale_step=0.1):
     section = None
 
-    # Generate a range of scales
-    scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
+    try:
+        # Generate a range of scales
+        scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
 
-    for scale in scales:
-        # Resize the template at the current scale
-        resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
+        for scale in scales:
+            # Resize the template at the current scale
+            resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
 
-        # Match the resized template with the sample image
-        result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
+            # Match the resized template with the sample image
+            result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
 
-        # Set a threshold to consider a match
-        threshold = 0.8
-        loc = np.where(result >= threshold)
+            # Set a threshold to consider a match
+            threshold = 0.8
+            loc = np.where(result >= threshold)
 
-        # Get the coordinates of all the detected matches
-        detected_positions = []
-        for pt in zip(*loc[::-1]):
-            detected_positions.append(pt)
+            # Get the coordinates of all the detected matches
+            detected_positions = []
+            for pt in zip(*loc[::-1]):
+                detected_positions.append(pt)
 
-        # If at least one match is found
-        if detected_positions:
-            # Convert to NumPy array for easier calculations
-            detected_positions = np.array(detected_positions)
+            # If at least one match is found
+            if detected_positions:
+                # Convert to NumPy array for easier calculations
+                detected_positions = np.array(detected_positions)
 
-            # Compute the bounding box around all detected matches
-            min_x, min_y = np.min(detected_positions, axis=0)
-            max_x, max_y = np.max(detected_positions, axis=0)
+                # Compute the bounding box around all detected matches
+                min_x, min_y = np.min(detected_positions, axis=0)
+                max_x, max_y = np.max(detected_positions, axis=0)
 
-            # Extract the region defined by the bounding box
-            section = sample_image[min_y:max_y, min_x:max_x]
+                # Extract the region defined by the bounding box
+                section = sample_image[min_y:max_y, min_x:max_x]
+                break  # Stop searching once a match is found
+
+    except Exception as e:
+        # Handle the exception (e.g., print an error message)
+        print(f"An error occurred: {e}")
 
     return section
 
