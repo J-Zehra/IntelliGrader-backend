@@ -3,7 +3,7 @@ import numpy as np
 import pytesseract
 
 
-def is_valid(image, number_of_choices, correct_answer_indices):
+def is_valid(image):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
 

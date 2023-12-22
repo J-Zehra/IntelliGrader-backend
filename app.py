@@ -19,39 +19,26 @@ def handle_connect():
     print("Client Connected")
 
 
-global_data = {"answer": None, "numberOfChoices": None}
-
-
-@socketio.on('frames')
-def handle_update_data(new_data):
-    global global_data
-    global_data = new_data
-    print('Received new data:', global_data)
-
-
 def generate_frames():
     stop_stream = False
     last_frame = None
     camera = cv2.VideoCapture(0)
-    answer = global_data["answer"]
-    number_of_choices = global_data["numberOfChoices"]
 
-    if answer is not None and number_of_choices is not None:
-        while not stop_stream:
-            success, frame = camera.read()
-            if not success:
-                break
-            else:
-                is_valid, image, roll_number, bubble_section = utils.is_valid(frame, number_of_choices, answer)
-                if is_valid:
-                    stop_stream = True
-                    last_frame = frame.copy()
+    while not stop_stream:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            is_valid, image, roll_number, bubble_section = utils.is_valid(frame)
+            if is_valid:
+                stop_stream = True
+                last_frame = frame.copy()
 
-                ret, buffer = cv2.imencode('.jpg', image)
-                image = buffer.tobytes()
+            ret, buffer = cv2.imencode('.jpg', image)
+            image = buffer.tobytes()
 
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
 
 
 @app.route('/video_feed')
