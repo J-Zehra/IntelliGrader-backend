@@ -19,31 +19,24 @@ def handle_connect():
     print("Client Connected")
 
 
-def generate_frames():
-    stop_stream = False
-    last_frame = None
-    camera = cv2.VideoCapture(1)
+@socketio.on('image')
+def handle_image(data):
+    print("Here")
+    template_marker = cv2.imread("marker.png", 0)
+    template_marker_2 = cv2.imread("marker2.png", 0)
 
-    while not stop_stream:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            is_valid, image, roll_number, bubble_section = utils.is_valid(frame)
-            if is_valid:
-                stop_stream = True
-                last_frame = frame.copy()
+    image_data = data.split(',')[1]
+    image_bytes = b64decode(image_data)
+    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-            ret, buffer = cv2.imencode('.jpg', image)
-            image = buffer.tobytes()
+    # PREPROCESS IMAGE
+    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    roll_number_section = utils.extract_section(image_gray, template_marker_2)
+    bubble_section = utils.extract_section(image_gray, template_marker)
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
-
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    if roll_number_section is not None and bubble_section is not None:
+        emit("image_response", "success")
 
 
 @socketio.on("grade")

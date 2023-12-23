@@ -3,21 +3,6 @@ import numpy as np
 import pytesseract
 
 
-def is_valid(image):
-    template_marker = cv2.imread("marker.png", 0)
-    template_marker_2 = cv2.imread("marker2.png", 0)
-
-    # PREPROCESS IMAGE
-    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    roll_number_section = extract_section(image_gray, template_marker_2)
-    bubble_section = extract_section(image_gray, template_marker)
-
-    if roll_number_section is not None and bubble_section is not None:
-        return False, image_gray, roll_number_section, bubble_section
-    else:
-        return True, image_gray, roll_number_section, bubble_section
-
-
 def process(image, number_of_choices, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
