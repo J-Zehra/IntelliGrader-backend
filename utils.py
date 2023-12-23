@@ -64,14 +64,10 @@ def process(image, number_of_choices, correct_answer_indices):
         except IndexError:
             choices_4 = 1
 
-        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section,
-                                                       bubble_section)
-        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section,
-                                                       bubble_section)
-        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section,
-                                                       bubble_section)
-        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section,
-                                                       bubble_section)
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section)
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section)
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section)
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section)
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
@@ -130,7 +126,7 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
     return section
 
 
-def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gray, bubble_section):
+def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
     answer_indices = []
 
     for i in range(0, len(sorted_circles), number_of_choices):
@@ -139,6 +135,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section_gra
         shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
+            bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
             roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
             roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
