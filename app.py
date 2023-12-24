@@ -37,9 +37,13 @@ def handle_image(data):
 
     if roll_number_section is not None and bubble_section is not None:
         print("success")
+        _, roll_number_buffer = cv2.imencode(".jpg", roll_number_section)
+        _, bubble_buffer = cv2.imencode(".jpg", bubble_section)
+        encoded_roll_number_section = base64.b64encode(roll_number_buffer).decode("utf-8")
+        encoded_bubble_section = base64.b64encode(bubble_buffer).decode("utf-8")
         data = {
-            "rollNumberSection": roll_number_section,
-            "bubbleSection": bubble_section
+            "rollNumberSection": encoded_roll_number_section,
+            "bubbleSection": encoded_bubble_section
         }
         emit("request_test_data", data)
 
