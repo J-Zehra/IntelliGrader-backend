@@ -101,6 +101,7 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
             result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
 
             # Set a threshold to consider a match
+
             threshold = 0.8
             loc = np.where(result >= threshold)
 

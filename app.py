@@ -76,10 +76,6 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
-    print(roll_number_section)
-    print(answer)
-    print(number_of_choices)
-
     roll_number_section = decode_encoded_image(roll_number_section)
     bubble_section = decode_encoded_image(bubble_section)
 
