@@ -28,6 +28,20 @@ def decode_image(image):
 
     return decoded_image
 
+
+def decode_encoded_image(image):
+    # Decode base64 string into binary data
+    binary_data = base64.b64decode(image)
+
+    # Convert binary data into NumPy array
+    np_array = np.frombuffer(binary_data, dtype=np.uint8)
+
+    # Decode the image using OpenCV
+    image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+
+    return image
+
+
 @socketio.on('image')
 def handle_image(data):
     template_marker = cv2.imread("marker.png", 0)
@@ -42,10 +56,12 @@ def handle_image(data):
 
     if roll_number_section is not None and bubble_section is not None:
         print("success")
+
         _, roll_number_buffer = cv2.imencode(".jpg", roll_number_section)
         _, bubble_buffer = cv2.imencode(".jpg", bubble_section)
         encoded_roll_number_section = base64.b64encode(roll_number_buffer).decode("utf-8")
         encoded_bubble_section = base64.b64encode(bubble_buffer).decode("utf-8")
+
         data = {
             "rollNumberSection": encoded_roll_number_section,
             "bubbleSection": encoded_bubble_section
@@ -60,8 +76,12 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
-    # roll_number_section = decode_image(roll_number_section)
-    # bubble_section = decode_image(bubble_section)
+    print(roll_number_section)
+    print(answer)
+    print(number_of_choices)
+
+    roll_number_section = decode_encoded_image(roll_number_section)
+    bubble_section = decode_encoded_image(bubble_section)
 
     # GET ROLL
     roll_number = None
@@ -91,8 +111,8 @@ def handle_process_images(data):
             return
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = utils.sort_circles(circles,
-                                                                                                  bubble_section,
-                                                                                                  number_of_choices)
+                                                                                                        bubble_section,
+                                                                                                        number_of_choices)
 
         try:
             choices_1 = number_of_choices[0]
@@ -175,7 +195,6 @@ def handle_process_images(data):
         response_data.append(data)
 
     emit("grade_result", response_data)
-
 
 
 if __name__ == '__main__':
