@@ -22,7 +22,6 @@ def handle_connect():
 
 @socketio.on('image')
 def handle_image(data):
-    print(f"Image Data: {data}")
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
 
