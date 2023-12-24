@@ -60,8 +60,8 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
-    roll_number_section = decode_image(roll_number_section)
-    bubble_section = decode_image(bubble_section)
+    # roll_number_section = decode_image(roll_number_section)
+    # bubble_section = decode_image(bubble_section)
 
     # GET ROLL
     roll_number = None
