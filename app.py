@@ -20,15 +20,20 @@ def handle_connect():
     print("Client Connected")
 
 
+def decode_image(image):
+    image_data = image.split(',')[1]
+    image_bytes = b64decode(image_data)
+    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+    decoded_image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
+    return decoded_image
+
 @socketio.on('image')
 def handle_image(data):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
 
-    image_data = data.split(',')[1]
-    image_bytes = b64decode(image_data)
-    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+    image = decode_image(data)
 
     # PREPROCESS IMAGE
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -55,11 +60,16 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
+    roll_number_section = decode_image(roll_number_section)
+    bubble_section = decode_image(bubble_section)
+
     # GET ROLL
-    roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
+    roll_number = None
+
     try:
+        roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
         roll_number = int(roll_number)
-    except ValueError:
+    except Exception as e:
         print("Roll Number Not Detected")
 
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
@@ -113,8 +123,11 @@ def handle_process_images(data):
 
         number_of_correct, number_of_incorrect = utils.check(answer_indices, answer)
 
+        _, buffer = cv2.imencode(".jpg", bubble_section)
+        encoded_image = base64.b64encode(buffer).decode("utf-8")
+
         data = {
-            "processed_image": bubble_section,
+            "processed_image": encoded_image,
             "answer_indices": answer_indices,
             "number_of_correct": number_of_correct,
             "number_of_incorrect": number_of_incorrect,
