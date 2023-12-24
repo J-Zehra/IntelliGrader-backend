@@ -90,6 +90,9 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
         # Generate a range of scales
         scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
 
+        # Counter for the number of detected markers
+        detected_count = 0
+
         for scale in scales:
             # Resize the template at the current scale
             resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
@@ -108,6 +111,9 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
 
             # If at least one match is found
             if detected_positions:
+                # Increment the detected count
+                detected_count += 1
+
                 # Convert to NumPy array for easier calculations
                 detected_positions = np.array(detected_positions)
 
@@ -117,10 +123,14 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
 
                 # Extract the region defined by the bounding box
                 section = sample_image[min_y:max_y, min_x:max_x]
-                break  # Stop searching once a match is found
+
+        # Check if all four markers are detected
+        if detected_count < 4:
+            section = None
 
     except Exception as e:
         # Handle the exception (e.g., print an error message)
+        section = None
         print(f"An error occurred: {e}")
 
     return section
