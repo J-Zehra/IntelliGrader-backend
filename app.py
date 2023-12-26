@@ -160,8 +160,6 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
-    print(images)
-
     response_data = []
     for image in images:
         image_data = image.split(',')[1]

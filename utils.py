@@ -34,8 +34,8 @@ def process(image, number_of_choices, correct_answer_indices):
         number_of_circles = int(len(circles))
         detected_circles = int(
             sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices))
-        print(f"{number_of_circles} circles")
-        print(f"Detected {detected_circles} circles")
+        # print(f"{number_of_circles} circles")
+        # print(f"Detected {detected_circles} circles")
 
         if number_of_circles != detected_circles:
             return
@@ -146,15 +146,12 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
         shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
-            bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
-            roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
+            roi_gray = bubble_section[y - r:y + r, x - r:x + r]
             roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
             roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
 
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
-
-            print(shading_percentage)
 
             if shading_percentage > 40:
                 shaded_index = index
