@@ -3,7 +3,7 @@ import numpy as np
 import pytesseract
 
 
-def process(image, number_of_choices, correct_answer_indices):
+def process(image, parts, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
     answer_indices = []
@@ -33,7 +33,7 @@ def process(image, number_of_choices, correct_answer_indices):
         circles = np.round(circles[0, :]).astype("int")
         number_of_circles = int(len(circles))
         detected_circles = int(
-            sum(choice * len(correct_answer_indices) for choice in number_of_choices) / len(number_of_choices))
+            sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
         # print(f"{number_of_circles} circles")
         # print(f"Detected {detected_circles} circles")
 
@@ -42,25 +42,25 @@ def process(image, number_of_choices, correct_answer_indices):
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
-                                                                                                  number_of_choices)
+                                                                                                  parts)
 
         try:
-            choices_1 = number_of_choices[0]
+            choices_1 = parts[0]["numberOfChoices"]
         except IndexError:
             choices_1 = 1
 
         try:
-            choices_2 = number_of_choices[1]
+            choices_2 = parts[1]["numberOfChoices"]
         except IndexError:
             choices_2 = 1
 
         try:
-            choices_3 = number_of_choices[2]
+            choices_3 = parts[2]["numberOfChoices"]
         except IndexError:
             choices_3 = 1
 
         try:
-            choices_4 = number_of_choices[3]
+            choices_4 = parts[3]["numberOfChoices"]
         except IndexError:
             choices_4 = 1
 
@@ -71,7 +71,7 @@ def process(image, number_of_choices, correct_answer_indices):
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
-    number_of_correct, number_of_incorrect = check(answer_indices, correct_answer_indices)
+    number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices, correct_answer_indices, parts)
 
     return {
         "processed_image": bubble_section,
@@ -79,6 +79,8 @@ def process(image, number_of_choices, correct_answer_indices):
         "answer_indices": answer_indices,
         "number_of_correct": number_of_correct,
         "number_of_incorrect": number_of_incorrect,
+        "total_score": total_score,
+        "total_perfect_score": total_perfect_score,
         "roll_number": roll_number
     }
 
@@ -173,24 +175,24 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
     return answer_indices
 
 
-def sort_circles(circles, cropped_bubble_image, number_of_choices):
+def sort_circles(circles, cropped_bubble_image, parts):
     try:
-        choices_1 = number_of_choices[0]
+        choices_1 = parts[0]["numberOfChoices"]
     except IndexError:
         choices_1 = 1
 
     try:
-        choices_2 = number_of_choices[1]
+        choices_2 = parts[1]["numberOfChoices"]
     except IndexError:
         choices_2 = 1
 
     try:
-        choices_3 = number_of_choices[2]
+        choices_3 = parts[2]["numberOfChoices"]
     except IndexError:
         choices_3 = 1
 
     try:
-        choices_4 = number_of_choices[3]
+        choices_4 = parts[3]["numberOfChoices"]
     except IndexError:
         choices_4 = 1
 
@@ -241,14 +243,32 @@ def get_shading_percentage(roi):
     return shading_percentage
 
 
-def check(extracted_answers, correct_answers):
+def check(extracted_answers, correct_answers, parts):
     number_of_correct = 0
     number_of_incorrect = 0
+    total_score = 0
+    total_perfect_score = 0
 
-    for correct, student in zip(correct_answers, extracted_answers):
-        if correct == student:
-            number_of_correct += 1
-        else:
-            number_of_incorrect += 1
+    current_index = 0
 
-    return number_of_correct, number_of_incorrect
+    for part in parts:
+        part_size = part['totalNumber']
+        part_answers = extracted_answers[current_index:current_index + part_size]
+        part_correct = correct_answers[current_index:current_index + part_size]
+
+        for correct, student in zip(part_correct, part_answers):
+            if correct == student:
+                number_of_correct += 1
+                total_score += part['points']
+            else:
+                number_of_incorrect += 1
+
+        total_perfect_score += part['points'] * part_size
+        current_index += part_size
+
+    print(f"Number of Correct: {number_of_correct}")
+    print(f"Number of Incorrect: {number_of_incorrect}")
+    print(f"Total Score: {total_score}")
+    print(f"Total Perfect Score: {total_perfect_score}")
+
+    return number_of_correct, number_of_incorrect, total_score, total_perfect_score

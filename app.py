@@ -158,7 +158,7 @@ def handle_process_images(data):
 def handle_process_images(data):
     images = data["images"]
     answer = data["answer"]
-    number_of_choices = data["numberOfChoices"]
+    parts = data["parts"]
 
     response_data = []
     for image in images:
@@ -167,7 +167,7 @@ def handle_process_images(data):
         image_array = np.frombuffer(image_bytes, dtype=np.uint8)
         image_original = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-        result = utils.process(image_original, number_of_choices, answer)
+        result = utils.process(image_original, parts, answer)
 
         if result is None:
             data = {"status": "invalid"}
@@ -183,6 +183,8 @@ def handle_process_images(data):
             "answer_indices": result["answer_indices"],
             "number_of_correct": result["number_of_correct"],
             "number_of_incorrect": result["number_of_incorrect"],
+            "total_score": result["total_score"],
+            "total_perfect_score": result["total_perfect_score"],
             "roll_number": result["roll_number"]
         }
 
