@@ -57,8 +57,8 @@ def handle_image(data):
     if roll_number_section is not None and bubble_section is not None:
         print("success")
 
-        _, roll_number_buffer = cv2.imencode(".jpg", roll_number_section)
-        _, bubble_buffer = cv2.imencode(".jpg", bubble_section)
+        _, roll_number_buffer = cv2.imencode(".webp", roll_number_section)
+        _, bubble_buffer = cv2.imencode(".webp", bubble_section)
         encoded_roll_number_section = base64.b64encode(roll_number_buffer).decode("utf-8")
         encoded_bubble_section = base64.b64encode(bubble_buffer).decode("utf-8")
 
@@ -139,7 +139,7 @@ def handle_process_images(data):
 
         number_of_correct, number_of_incorrect = utils.check(answer_indices, answer)
 
-        _, buffer = cv2.imencode(".jpg", bubble_section)
+        _, buffer = cv2.imencode(".webp", bubble_section)
         encoded_image = base64.b64encode(buffer).decode("utf-8")
 
         data = {
@@ -169,12 +169,12 @@ def handle_process_images(data):
 
         result = utils.process(image_original, parts, answer)
 
-        if result is None:
-            data = {"status": "invalid"}
-            response_data.append(data)
-            return
+        if result["status"] == "error":
+            print("error")
+            response_data.append(result)
+            continue
 
-        _, buffer = cv2.imencode(".jpg", result["processed_image"])
+        _, buffer = cv2.imencode(".webp", result["processed_image"])
         encoded_image = base64.b64encode(buffer).decode("utf-8")
 
         data = {

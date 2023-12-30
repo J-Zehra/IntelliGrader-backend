@@ -13,15 +13,22 @@ def process(image, parts, correct_answer_indices):
 
     roll_number_section = extract_section(image_gray, template_marker_2)
 
+    if roll_number_section is None:
+        return {"status": "error", "message": "Roll Number Not Detected"}
+
     # GET ROLL
     roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
 
     try:
         roll_number = int(roll_number)
     except ValueError:
-        print("Roll Number Not Detected")
+        return {"status": "error", "message": "Roll Number Not Detected"}
 
     bubble_section = extract_section(image_gray, template_marker)
+
+    if bubble_section is None:
+        return {"status": "error", "message": "Bubble Section Not Detected"}
+
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
 
     # DETECT CIRCLES
@@ -31,14 +38,14 @@ def process(image, parts, correct_answer_indices):
 
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
-        number_of_circles = int(len(circles))
-        detected_circles = int(
+        detected_circles = int(len(circles))
+        number_of_circles = int(
             sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
-        # print(f"{number_of_circles} circles")
-        # print(f"Detected {detected_circles} circles")
+        print(f"{number_of_circles} circles")
+        print(f"Detected {detected_circles} circles")
 
         if number_of_circles != detected_circles:
-            return
+            return {"status": "error", "message": "Not All Circles Are Detected"}
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section,
@@ -71,7 +78,8 @@ def process(image, parts, correct_answer_indices):
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
-    number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices, correct_answer_indices, parts)
+    number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
+                                                                                     correct_answer_indices, parts)
 
     return {
         "processed_image": bubble_section,
@@ -81,7 +89,8 @@ def process(image, parts, correct_answer_indices):
         "number_of_incorrect": number_of_incorrect,
         "total_score": total_score,
         "total_perfect_score": total_perfect_score,
-        "roll_number": roll_number
+        "roll_number": roll_number,
+        "status": "success"
     }
 
 
@@ -91,9 +100,6 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
     try:
         # Generate a range of scales
         scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
-
-        # Counter for the number of detected markers
-        detected_count = 0
 
         for scale in scales:
             # Resize the template at the current scale
@@ -113,10 +119,7 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
                 detected_positions.append(pt)
 
             # If at least one match is found
-            if detected_positions:
-                # Increment the detected count
-                detected_count += 1
-
+            if len(detected_positions) > 2:
                 # Convert to NumPy array for easier calculations
                 detected_positions = np.array(detected_positions)
 
@@ -126,10 +129,6 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale
 
                 # Extract the region defined by the bounding box
                 section = sample_image[min_y:max_y, min_x:max_x]
-
-        # Check if all four markers are detected
-        if detected_count < 4:
-            section = None
 
     except Exception as e:
         # Handle the exception (e.g., print an error message)
