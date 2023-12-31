@@ -64,9 +64,14 @@ def handle_image(data):
 
         data = {
             "rollNumberSection": encoded_roll_number_section,
-            "bubbleSection": encoded_bubble_section
+            "bubbleSection": encoded_bubble_section,
+            "status": "success"
         }
+
         emit("request_test_data", data)
+
+    data = {"status": "failed"}
+    emit("request_test_data", data)
 
 
 @socketio.on("single_grade")
@@ -76,16 +81,17 @@ def handle_process_images(data):
     answer = data["answer"]
     number_of_choices = data["numberOfChoices"]
 
+    print("Single Grade")
+
     roll_number_section = decode_encoded_image(roll_number_section)
     bubble_section = decode_encoded_image(bubble_section)
 
     # GET ROLL
-    roll_number = None
+    roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
 
     try:
-        roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
         roll_number = int(roll_number)
-    except Exception as e:
+    except ValueError:
         print("Roll Number Not Detected")
 
     bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)

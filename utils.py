@@ -94,46 +94,39 @@ def process(image, parts, correct_answer_indices):
     }
 
 
-def extract_section(sample_image, template_marker, scale_range=(0.5, 2.0), scale_step=0.1):
+def extract_section(sample_image, template_marker, scale_range=(1, 2), scale_step=0.1):
     section = None
 
-    try:
-        # Generate a range of scales
-        scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
+    # Generate a range of scales
+    scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
 
-        for scale in scales:
-            # Resize the template at the current scale
-            resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
+    for scale in scales:
+        # Resize the template at the current scale
+        resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
 
-            # Match the resized template with the sample image
-            result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
+        # Match the resized template with the sample image
+        result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
 
-            # Set a threshold to consider a match
+        # Set a threshold to consider a match
+        threshold = 0.8
+        loc = np.where(result >= threshold)
 
-            threshold = 0.8
-            loc = np.where(result >= threshold)
+        # Get the coordinates of all the detected matches
+        detected_positions = []
+        for pt in zip(*loc[::-1]):
+            detected_positions.append(pt)
 
-            # Get the coordinates of all the detected matches
-            detected_positions = []
-            for pt in zip(*loc[::-1]):
-                detected_positions.append(pt)
+        # If at least one match is found
+        if len(detected_positions) > 2:
+            # Convert to NumPy array for easier calculations
+            detected_positions = np.array(detected_positions)
 
-            # If at least one match is found
-            if len(detected_positions) > 2:
-                # Convert to NumPy array for easier calculations
-                detected_positions = np.array(detected_positions)
+            # Compute the bounding box around all detected matches
+            min_x, min_y = np.min(detected_positions, axis=0)
+            max_x, max_y = np.max(detected_positions, axis=0)
 
-                # Compute the bounding box around all detected matches
-                min_x, min_y = np.min(detected_positions, axis=0)
-                max_x, max_y = np.max(detected_positions, axis=0)
-
-                # Extract the region defined by the bounding box
-                section = sample_image[min_y:max_y, min_x:max_x]
-
-    except Exception as e:
-        # Handle the exception (e.g., print an error message)
-        section = None
-        print(f"An error occurred: {e}")
+            # Extract the region defined by the bounding box
+            section = sample_image[min_y:max_y, min_x:max_x]
 
     return section
 
