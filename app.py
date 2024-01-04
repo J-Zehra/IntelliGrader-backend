@@ -45,7 +45,6 @@ def decode_encoded_image(image):
 @socketio.on('image')
 def handle_image(data):
     response_data = None
-    callback = None
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
 
