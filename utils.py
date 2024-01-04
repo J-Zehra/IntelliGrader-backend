@@ -8,25 +8,39 @@ def process(image, parts, correct_answer_indices):
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
     answer_indices = []
+    roll_number = None
 
     # PREPROCESS IMAGE
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # PROCESS ROLL NUMBER SECTION
     roll_number_section = extract_section(image_gray, template_marker_2)
-
     if roll_number_section is None:
         return {"status": "error", "message": "Roll Number Not Detected"}
 
-    # GET ROLL
-    roll_number = pytesseract.image_to_string(roll_number_section, config='--psm 11 digits')
+    roll_number_section_blur = cv2.GaussianBlur(roll_number_section, (21, 21), 1)
 
-    try:
-        roll_number = int(roll_number)
-    except ValueError:
-        return {"status": "error", "message": "Roll Number Not Detected"}
+    # DETECT CIRCLES
+    roll_number_circles = cv2.HoughCircles(
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=80, param2=10, minRadius=5, maxRadius=8
+    )
 
+    if roll_number_circles is not None:
+        roll_number_circles = np.round(roll_number_circles[0, :]).astype("int")
+        detected_roll_number_circles = int(len(roll_number_circles))
+        print(f"Detected {detected_roll_number_circles} roll number circles")
+
+        if detected_roll_number_circles != 20:
+            return {"status": "error", "message": "Not All Circles Are Detected"}
+
+        sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
+        extracted_indices = extract_answer_indices(sorted_roll_number_circles, 10, roll_number_section)
+        roll_number = int(''.join(map(str, extracted_indices)))
+        print(f"Extracted Roll Number Indices: {extracted_indices}")
+        print(f"Roll Number: {roll_number}")
+
+    # PROCESS BUBBLE SECTION
     bubble_section = extract_section(image_gray, template_marker)
-
     if bubble_section is None:
         return {"status": "error", "message": "Bubble Section Not Detected"}
 
