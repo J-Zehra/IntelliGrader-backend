@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import pytesseract
+from imutils.object_detection import non_max_suppression
 
 
 def process(image, parts, correct_answer_indices):
@@ -94,7 +95,7 @@ def process(image, parts, correct_answer_indices):
     }
 
 
-def extract_section(sample_image, template_marker, scale_range=(1, 2), scale_step=0.1):
+def extract_section(sample_image, template_marker, scale_range=(1, 1.5), scale_step=0.1):
     section = None
 
     # Generate a range of scales
@@ -103,32 +104,55 @@ def extract_section(sample_image, template_marker, scale_range=(1, 2), scale_ste
     for scale in scales:
         # Resize the template at the current scale
         resized_template = cv2.resize(template_marker, None, fx=scale, fy=scale)
+        (tH, tW) = resized_template.shape[:2]
 
         # Match the resized template with the sample image
         result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
 
         # Set a threshold to consider a match
         threshold = 0.8
-        loc = np.where(result >= threshold)
+        (yCoords, xCoords) = np.where(result >= threshold)
 
-        # Get the coordinates of all the detected matches
-        detected_positions = []
-        for pt in zip(*loc[::-1]):
-            detected_positions.append(pt)
+        # initialize our list of rectangles
+        rects = []
 
-        print(f"Detected Positions: {len(detected_positions)}")
+        # loop over the starting (x, y)-coordinates again
+        for (x, y) in zip(xCoords, yCoords):
+            # update our list of rectangles
+            rects.append((x, y, x + tW, y + tH))
 
-        # If at least one match is found
-        if len(detected_positions) > 2:
-            # Convert to NumPy array for easier calculations
-            detected_positions = np.array(detected_positions)
+        # apply non-maxima suppression to the rectangles
+        pick = non_max_suppression(np.array(rects))
+        print("[INFO] {} matched locations *after* NMS".format(len(pick)))
 
-            # Compute the bounding box around all detected matches
-            min_x, min_y = np.min(detected_positions, axis=0)
-            max_x, max_y = np.max(detected_positions, axis=0)
+        if len(pick) == 4:
+            # loop over the final bounding boxes
+            for (startX, startY, endX, endY) in pick:
+                # draw the bounding box on the image
+                cv2.rectangle(sample_image, (startX, startY), (endX, endY),
+                              (255, 0, 0), 3)
 
-            # Extract the region defined by the bounding box
+            margin = 8
+
+            # Extract the section inside the four detected templates with a margin
+            min_x = min([startX for (startX, _, _, _) in pick]) + margin
+            min_y = min([startY for (_, startY, _, _) in pick]) + margin
+            max_x = max([endX for (_, _, endX, _) in pick]) - margin
+            max_y = max([endY for (_, _, _, endY) in pick]) - margin
+
+            # Ensure the coordinates are within bounds
+            min_x = max(0, min_x)
+            min_y = max(0, min_y)
+            max_x = min(sample_image.shape[1], max_x)
+            max_y = min(sample_image.shape[0], max_y)
+
+            # Draw the bounding box on the image
+            cv2.rectangle(sample_image, (min_x, min_y), (max_x, max_y), (255, 0, 0), 3)
+
+            # Crop the section inside the four detected templates
             section = sample_image[min_y:max_y, min_x:max_x]
+
+            break
 
     return section
 
