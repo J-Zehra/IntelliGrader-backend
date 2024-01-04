@@ -109,7 +109,7 @@ def process(image, parts, correct_answer_indices):
     }
 
 
-def extract_section(sample_image, template_marker, scale_range=(1, 1.5), scale_step=0.1):
+def extract_section(sample_image, template_marker, scale_range=(0.5, 1.5), scale_step=0.1):
     section = None
 
     # Generate a range of scales
