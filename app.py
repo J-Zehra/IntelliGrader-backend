@@ -69,8 +69,7 @@ def handle_image(data):
             "status": "success"
         }
 
-        callback = {"status": "success"}
-        return callback
+        return response_data
 
     callback = {"status": "failed"}
     return callback

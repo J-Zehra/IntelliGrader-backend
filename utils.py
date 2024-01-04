@@ -116,6 +116,8 @@ def extract_section(sample_image, template_marker, scale_range=(1, 2), scale_ste
         for pt in zip(*loc[::-1]):
             detected_positions.append(pt)
 
+        print(f"Detected Positions: {len(detected_positions)}")
+
         # If at least one match is found
         if len(detected_positions) > 2:
             # Convert to NumPy array for easier calculations
