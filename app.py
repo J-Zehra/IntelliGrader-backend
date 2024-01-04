@@ -42,8 +42,15 @@ def decode_encoded_image(image):
     return image
 
 
+# Initialize state variables
+stored_roll_number_section = None
+stored_bubble_section = None
+
+
 @socketio.on('image')
 def handle_image(data):
+    global stored_roll_number_section, stored_bubble_section
+
     response_data = None
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
@@ -52,14 +59,23 @@ def handle_image(data):
 
     # PREPROCESS IMAGE
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    roll_number_section = utils.extract_section(image_gray, template_marker_2)
-    bubble_section = utils.extract_section(image_gray, template_marker)
 
-    if roll_number_section is not None and bubble_section is not None:
+    # Only detect sections if not already stored
+    if stored_roll_number_section is None:
+        roll_number_section = utils.extract_section(image_gray, template_marker_2)
+        if roll_number_section is not None:
+            stored_roll_number_section = roll_number_section
+
+    if stored_bubble_section is None:
+        bubble_section = utils.extract_section(image_gray, template_marker)
+        if bubble_section is not None:
+            stored_bubble_section = bubble_section
+
+    if stored_roll_number_section is not None and stored_bubble_section is not None:
         print("success")
 
-        _, roll_number_buffer = cv2.imencode(".webp", roll_number_section)
-        _, bubble_buffer = cv2.imencode(".webp", bubble_section)
+        _, roll_number_buffer = cv2.imencode(".webp", stored_roll_number_section)
+        _, bubble_buffer = cv2.imencode(".webp", stored_bubble_section)
         encoded_roll_number_section = base64.b64encode(roll_number_buffer).decode("utf-8")
         encoded_bubble_section = base64.b64encode(bubble_buffer).decode("utf-8")
 
@@ -68,6 +84,9 @@ def handle_image(data):
             "bubbleSection": encoded_bubble_section,
             "status": "success"
         }
+
+        stored_roll_number_section = None
+        stored_bubble_section = None
 
         return response_data
 
