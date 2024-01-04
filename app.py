@@ -44,6 +44,7 @@ def decode_encoded_image(image):
 
 @socketio.on('image')
 def handle_image(data):
+    response_data = None
     template_marker = cv2.imread("marker.png", 0)
     template_marker_2 = cv2.imread("marker2.png", 0)
 
@@ -62,16 +63,18 @@ def handle_image(data):
         encoded_roll_number_section = base64.b64encode(roll_number_buffer).decode("utf-8")
         encoded_bubble_section = base64.b64encode(bubble_buffer).decode("utf-8")
 
-        data = {
+        response_data = {
             "rollNumberSection": encoded_roll_number_section,
             "bubbleSection": encoded_bubble_section,
             "status": "success"
         }
 
-        emit("request_test_data", data)
+        cb = {"status": "failed"}
 
-    data = {"status": "failed"}
-    emit("request_test_data", data)
+        emit("proceed_image", response_data, callback=cb)
+
+    cb = {"status": "failed"}
+    emit("processed_image", response_data, callback=cb)
 
 
 @socketio.on("single_grade")
