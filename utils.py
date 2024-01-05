@@ -19,7 +19,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=50, param2=10, minRadius=5, maxRadius=10
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=80, param2=10, minRadius=5, maxRadius=8
     )
 
     if roll_number_circles is not None:
@@ -45,7 +45,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=50, param2=10, minRadius=5, maxRadius=10
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=80, param2=10, minRadius=5, maxRadius=8
     )
 
     if circles is not None:
@@ -241,9 +241,6 @@ def sort_circles(circles, cropped_bubble_image, parts):
     sorted_bottom_left = sort(choices_2, bottom_left_circles)
     sorted_top_right = sort(choices_3, top_right_circles)
     sorted_bottom_right = sort(choices_4, bottom_right_circles)
-
-    # Concatenate the sorted lists from each quadrant
-    sorted_circles = sorted_top_left + sorted_bottom_left + sorted_top_right + sorted_bottom_right
 
     return sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right
 
