@@ -194,7 +194,11 @@ def handle_process_images(data):
 
         if result["status"] == "error":
             print("error")
-            response_data.append(result)
+            error_response = {
+                "status": "error",
+                "image": image,
+            }
+            response_data.append(error_response)
             continue
 
         _, buffer = cv2.imencode(".webp", result["processed_image"])
