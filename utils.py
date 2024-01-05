@@ -136,9 +136,9 @@ def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_s
 
         # apply non-maxima suppression to the rectangles
         pick = non_max_suppression(np.array(rects))
-        print(f"[INFO] {len(pick)} matched locations in scale {scale}")
 
         if len(pick) == 4:
+            print(f"[INFO] {len(pick)} matched locations in scale {scale}")
             margin = 5
 
             # Extract the section inside the four detected templates with a margin
