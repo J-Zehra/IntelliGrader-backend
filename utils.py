@@ -10,15 +10,12 @@ def process(image, parts, correct_answer_indices):
     answer_indices = []
     roll_number = None
 
-    # PREPROCESS IMAGE
-    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
     # PROCESS ROLL NUMBER SECTION
-    roll_number_section = extract_section(image_gray, template_marker_2)
+    roll_number_section, roll_number_section_gray = extract_section(image, template_marker_2)
     if roll_number_section is None:
         return {"status": "error", "message": "Roll Number Not Detected"}
 
-    roll_number_section_blur = cv2.GaussianBlur(roll_number_section, (21, 21), 1)
+    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_gray, (21, 21), 1)
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
@@ -40,11 +37,11 @@ def process(image, parts, correct_answer_indices):
         print(f"Roll Number: {roll_number}")
 
     # PROCESS BUBBLE SECTION
-    bubble_section = extract_section(image_gray, template_marker)
+    bubble_section, bubble_section_gray = extract_section(image, template_marker)
     if bubble_section is None:
         return {"status": "error", "message": "Bubble Section Not Detected"}
 
-    bubble_section_blur = cv2.GaussianBlur(bubble_section, (21, 21), 1)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (21, 21), 1)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
@@ -63,7 +60,7 @@ def process(image, parts, correct_answer_indices):
             return {"status": "error", "message": "Not All Circles Are Detected"}
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
-                                                                                                  bubble_section,
+                                                                                                  bubble_section_gray,
                                                                                                   parts)
 
         try:
@@ -111,6 +108,8 @@ def process(image, parts, correct_answer_indices):
 
 def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_step=0.1):
     section = None
+    section_gray = None
+    image_gray = cv2.cvtColor(sample_image, cv2.COLOR_BGR2GRAY)
 
     # Generate a range of scales
     scales = np.arange(scale_range[0], scale_range[1] + scale_step, scale_step)
@@ -121,7 +120,7 @@ def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_s
         (tH, tW) = resized_template.shape[:2]
 
         # Match the resized template with the sample image
-        result = cv2.matchTemplate(sample_image, resized_template, cv2.TM_CCOEFF_NORMED)
+        result = cv2.matchTemplate(image_gray, resized_template, cv2.TM_CCOEFF_NORMED)
 
         # Set a threshold to consider a match
         threshold = 0.8
@@ -140,12 +139,6 @@ def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_s
         print(f"[INFO] {len(pick)} matched locations in scale {scale}")
 
         if len(pick) == 4:
-            # # loop over the final bounding boxes
-            # for (startX, startY, endX, endY) in pick:
-            #     # draw the bounding box on the image
-            #     cv2.rectangle(sample_image, (startX, startY), (endX, endY),
-            #                   (255, 0, 0), 3)
-
             margin = 5
 
             # Extract the section inside the four detected templates with a margin
@@ -160,19 +153,18 @@ def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_s
             max_x = min(sample_image.shape[1], max_x)
             max_y = min(sample_image.shape[0], max_y)
 
-            # Draw the bounding box on the image
-            # cv2.rectangle(sample_image, (min_x, min_y), (max_x, max_y), (255, 0, 0), 3)
-
             # Crop the section inside the four detected templates
+            section_gray = image_gray[min_y:max_y, min_x:max_x]
             section = sample_image[min_y:max_y, min_x:max_x]
 
             break
 
-    return section
+    return section, section_gray
 
 
 def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
     answer_indices = []
+    bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
 
     for i in range(0, len(sorted_circles), number_of_choices):
         question_circles = sorted_circles[i:i + number_of_choices]
@@ -180,7 +172,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
         shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
-            roi_gray = bubble_section[y - r:y + r, x - r:x + r]
+            roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
             roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
             roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
 
