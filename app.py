@@ -57,17 +57,14 @@ def handle_image(data):
 
     image = decode_image(data)
 
-    # PREPROCESS IMAGE
-    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
     # Only detect sections if not already stored
     if stored_roll_number_section is None:
-        roll_number_section = utils.extract_section(image_gray, template_marker_2)
+        roll_number_section, _ = utils.extract_section(image, template_marker_2)
         if roll_number_section is not None:
             stored_roll_number_section = roll_number_section
 
     if stored_bubble_section is None:
-        bubble_section = utils.extract_section(image_gray, template_marker)
+        bubble_section, _ = utils.extract_section(image, template_marker)
         if bubble_section is not None:
             stored_bubble_section = bubble_section
 
