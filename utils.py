@@ -19,7 +19,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=80, param2=10, minRadius=5, maxRadius=8
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=50, param2=10, minRadius=5, maxRadius=8
     )
 
     if roll_number_circles is not None:
@@ -28,11 +28,16 @@ def process(image, parts, correct_answer_indices):
         print(f"Detected {detected_roll_number_circles} roll number circles")
 
         if detected_roll_number_circles != 20:
-            return {"status": "error", "message": "Not All Circles Are Detected"}
+            return {"status": "error", "message": "Not all circles are detected"}
 
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
         extracted_indices = extract_answer_indices(sorted_roll_number_circles, 10, roll_number_section)
+
+        if -1 in extracted_indices:
+            return {"status": "error", "message": "Roll Number has an undetected shade"}
+
         roll_number = int(''.join(map(str, extracted_indices)))
+
         print(f"Extracted Roll Number Indices: {extracted_indices}")
         print(f"Roll Number: {roll_number}")
 
@@ -45,7 +50,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=80, param2=10, minRadius=5, maxRadius=8
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=50, param2=10, minRadius=5, maxRadius=8
     )
 
     if circles is not None:
@@ -179,7 +184,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
 
-            if shading_percentage > 75:
+            if shading_percentage > 50:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
