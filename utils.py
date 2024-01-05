@@ -109,7 +109,7 @@ def process(image, parts, correct_answer_indices):
     }
 
 
-def extract_section(sample_image, template_marker, scale_range=(0.5, 1.5), scale_step=0.1):
+def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_step=0.1):
     section = None
 
     # Generate a range of scales
@@ -137,16 +137,16 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 1.5), scale
 
         # apply non-maxima suppression to the rectangles
         pick = non_max_suppression(np.array(rects))
-        print("[INFO] {} matched locations *after* NMS".format(len(pick)))
+        print(f"[INFO] {len(pick)} matched locations in scale {scale}")
 
         if len(pick) == 4:
-            # loop over the final bounding boxes
-            for (startX, startY, endX, endY) in pick:
-                # draw the bounding box on the image
-                cv2.rectangle(sample_image, (startX, startY), (endX, endY),
-                              (255, 0, 0), 3)
+            # # loop over the final bounding boxes
+            # for (startX, startY, endX, endY) in pick:
+            #     # draw the bounding box on the image
+            #     cv2.rectangle(sample_image, (startX, startY), (endX, endY),
+            #                   (255, 0, 0), 3)
 
-            margin = 8
+            margin = 5
 
             # Extract the section inside the four detected templates with a margin
             min_x = min([startX for (startX, _, _, _) in pick]) + margin
@@ -161,7 +161,7 @@ def extract_section(sample_image, template_marker, scale_range=(0.5, 1.5), scale
             max_y = min(sample_image.shape[0], max_y)
 
             # Draw the bounding box on the image
-            cv2.rectangle(sample_image, (min_x, min_y), (max_x, max_y), (255, 0, 0), 3)
+            # cv2.rectangle(sample_image, (min_x, min_y), (max_x, max_y), (255, 0, 0), 3)
 
             # Crop the section inside the four detected templates
             section = sample_image[min_y:max_y, min_x:max_x]
