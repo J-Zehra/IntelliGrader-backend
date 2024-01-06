@@ -33,6 +33,7 @@ def process(image, parts, correct_answer_indices):
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
         extracted_indices = extract_answer_indices(sorted_roll_number_circles, 10, roll_number_section)
 
+        print(f"Extracted Indices: {extracted_indices}")
         if -1 in extracted_indices or -2 in extracted_indices:
             return {"status": "error", "message": "Roll Number has an undetected shade"}
 
