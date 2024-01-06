@@ -195,7 +195,8 @@ def handle_process_images(data):
         if result["status"] == "error":
             print("error")
             error_response = {
-                "status": "error",
+                "message": result["message"],
+                "status": result["error"],
                 "image": image,
             }
             response_data.append(error_response)

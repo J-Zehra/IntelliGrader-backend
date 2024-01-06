@@ -13,7 +13,7 @@ def process(image, parts, correct_answer_indices):
     # PROCESS ROLL NUMBER SECTION
     roll_number_section, roll_number_section_gray = extract_section(image, template_marker_2)
     if roll_number_section is None:
-        return {"status": "error", "message": "Roll Number Not Detected"}
+        return {"status": "error", "message": "Roll number not detected"}
 
     roll_number_section_blur = cv2.GaussianBlur(roll_number_section_gray, (21, 21), 1)
 
@@ -28,12 +28,12 @@ def process(image, parts, correct_answer_indices):
         print(f"Detected {detected_roll_number_circles} roll number circles")
 
         if detected_roll_number_circles != 20:
-            return {"status": "error", "message": "Not all circles are detected"}
+            return {"status": "error", "message": "Roll number detected but bubbles are not."}
 
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
         extracted_indices = extract_answer_indices(sorted_roll_number_circles, 10, roll_number_section)
 
-        if -1 in extracted_indices:
+        if -1 in extracted_indices or -2 in extracted_indices:
             return {"status": "error", "message": "Roll Number has an undetected shade"}
 
         roll_number = int(''.join(map(str, extracted_indices)))
@@ -62,7 +62,7 @@ def process(image, parts, correct_answer_indices):
         print(f"Detected {detected_circles} circles")
 
         if number_of_circles != detected_circles:
-            return {"status": "error", "message": "Not All Circles Are Detected"}
+            return {"status": "error", "message": "Bubble section detected but is missing circles"}
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section_gray,
