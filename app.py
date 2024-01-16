@@ -1,14 +1,12 @@
 import base64
-import json
 
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_cors import CORS
 
 import utils
 import cv2
 import numpy as np
 from flask_socketio import SocketIO, emit
-from base64 import b64decode
 
 app = Flask(__name__)
 CORS(app)
@@ -20,23 +18,17 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 #     emit("connect_emit", "Successfully Connected")
 #     print("Client Connected")
 
-@app.route("/grade", methods=["POST"])
-def process_image():
+@socketio.on("grade")
+def handle_grade(data):
     print("HERE")
-    images_data = request.form["images"]
-    answer_data = request.form["answer"]
-    parts_data = request.form["parts"]
-
-    images = json.loads(images_data)
-    answer = json.loads(answer_data)
-    parts = json.loads(parts_data)
+    images = data["images"]
+    answer = data["answer"]
+    parts = data["parts"]
 
     response_data = []
     for index, image in enumerate(images):
         print(index)
-        image_data = image.split(',')[1]
-        image_bytes = b64decode(image_data)
-        image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+        image_array = np.frombuffer(image, dtype=np.uint8)
         image_original = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
         result = utils.process(image_original, parts, answer)
@@ -51,7 +43,7 @@ def process_image():
             response_data.append(error_response)
             continue
 
-        socketio.emit("progress", {"index": index + 1}, namespace="/test")
+        # socketio.emit("progress", {"index": index + 1})
 
         _, buffer = cv2.imencode(".webp", result["processed_image"])
         encoded_image = base64.b64encode(buffer).decode("utf-8")
@@ -69,7 +61,7 @@ def process_image():
 
         response_data.append(data)
 
-    return jsonify(response_data)
+    emit("grade_result", response_data)
 
 
 if __name__ == '__main__':
