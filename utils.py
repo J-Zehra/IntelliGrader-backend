@@ -11,11 +11,11 @@ def process(image, parts, correct_answer_indices):
     roll_number = None
 
     # PROCESS ROLL NUMBER SECTION
-    roll_number_section, roll_number_section_gray = extract_section(image, template_marker_2)
+    roll_number_section, roll_number_section_gray = extract_section(image, template_marker_2, 5)
     if roll_number_section is None:
         return {"status": "error", "message": "Roll number not detected"}
 
-    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_gray, (21, 21), 1)
+    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_gray, (21, 21), 0.6)
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
@@ -31,7 +31,8 @@ def process(image, parts, correct_answer_indices):
             return {"status": "error", "message": "Roll number not detected."}
 
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
-        extracted_indices = extract_roll_number_indices(sorted_roll_number_circles, roll_number_section_gray)
+        final_sorted_roll_number_circles = sort(10, sorted_roll_number_circles)
+        extracted_indices = extract_roll_number_indices(final_sorted_roll_number_circles, roll_number_section_gray)
 
         roll_number = int(''.join(map(str, extracted_indices)))
 
@@ -39,7 +40,7 @@ def process(image, parts, correct_answer_indices):
         print(f"Roll Number: {roll_number}")
 
     # PROCESS BUBBLE SECTION
-    bubble_section, bubble_section_gray = extract_section(image, template_marker)
+    bubble_section, bubble_section_gray = extract_section(image, template_marker, 10)
     if bubble_section is None:
         return {"status": "error", "message": "Bubble Section Not Detected"}
 
@@ -121,9 +122,9 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
 
         # Extract region of interest (ROI)
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 1)
+        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 0.8)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 51, 40)
+                                                       cv2.THRESH_BINARY_INV, 51, 36)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
@@ -143,9 +144,9 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
 
         # Extract region of interest (ROI)
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 1)
+        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 0.8)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 51, 40)
+                                                       cv2.THRESH_BINARY_INV, 51, 36)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
@@ -161,7 +162,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
     return roll_number_indices
 
 
-def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_step=0.1):
+def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 2), scale_step=0.1):
     section = None
     section_gray = None
     image_gray = cv2.cvtColor(sample_image, cv2.COLOR_BGR2GRAY)
@@ -194,7 +195,6 @@ def extract_section(sample_image, template_marker, scale_range=(0.4, 2), scale_s
 
         if len(pick) == 4:
             print(f"[INFO] {len(pick)} matched locations in scale {scale}")
-            margin = 5
 
             # Extract the section inside the four detected templates with a margin
             min_x = min([startX for (startX, _, _, _) in pick]) + margin

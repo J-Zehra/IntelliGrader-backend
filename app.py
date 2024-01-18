@@ -12,12 +12,6 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
-# @socketio.on("connect")
-# def handle_connect():
-#     emit("connect_emit", "Successfully Connected")
-#     print("Client Connected")
-
 @socketio.on("grade")
 def handle_grade(data):
     print("HERE")
@@ -46,11 +40,11 @@ def handle_grade(data):
         # socketio.emit("progress", {"index": index + 1})
 
         _, buffer = cv2.imencode(".webp", result["processed_image"])
-        encoded_image = base64.b64encode(buffer).decode("utf-8")
+        binary_image = buffer.tobytes()
 
         data = {
             "status": "success",
-            "processed_image": encoded_image,
+            "processed_image": binary_image,
             "answer_indices": result["answer_indices"],
             "number_of_correct": result["number_of_correct"],
             "number_of_incorrect": result["number_of_incorrect"],
