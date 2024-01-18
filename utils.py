@@ -28,7 +28,7 @@ def process(image, parts, correct_answer_indices):
         print(f"Detected {detected_roll_number_circles} roll number circles")
 
         if detected_roll_number_circles != 20:
-            return {"status": "error", "message": "Roll number detected but bubbles are not."}
+            return {"status": "error", "message": "Roll number not detected."}
 
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
         extracted_indices = extract_roll_number_indices(sorted_roll_number_circles, roll_number_section_gray)
@@ -59,7 +59,7 @@ def process(image, parts, correct_answer_indices):
         print(f"Detected {detected_circles} circles")
 
         if number_of_circles != detected_circles:
-            return {"status": "error", "message": "Bubble section detected but is missing circles"}
+            return {"status": "error", "message": "Bubble section not detected"}
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section_gray,
@@ -123,7 +123,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
         roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 1)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 41, 40)
+                                                       cv2.THRESH_BINARY_INV, 51, 40)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
@@ -145,7 +145,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
         roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 1)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 41, 40)
+                                                       cv2.THRESH_BINARY_INV, 51, 40)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
