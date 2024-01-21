@@ -19,7 +19,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=100, param2=10, minRadius=3, maxRadius=8
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=100, param2=10, minRadius=5, maxRadius=8
     )
 
     if roll_number_circles is not None:
