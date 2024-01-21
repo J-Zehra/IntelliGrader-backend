@@ -5,8 +5,8 @@ from imutils.object_detection import non_max_suppression
 
 
 def process(image, parts, correct_answer_indices):
-    template_marker = cv2.imread("marker.png", 0)
-    template_marker_2 = cv2.imread("marker2.png", 0)
+    template_marker = cv2.imread("marker.jpg", 0)
+    template_marker_2 = cv2.imread("marker2.jpg", 0)
     answer_indices = []
     roll_number = None
 
@@ -19,7 +19,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=100, param2=10, minRadius=5, maxRadius=8
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=8
     )
 
     if roll_number_circles is not None:
@@ -48,7 +48,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=5, param1=100, param2=10, minRadius=4, maxRadius=8
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=4, maxRadius=8
     )
 
     if circles is not None:
