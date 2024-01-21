@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import pytesseract
 from imutils.object_detection import non_max_suppression
 
 
@@ -19,7 +18,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=8
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=10
     )
 
     if roll_number_circles is not None:
