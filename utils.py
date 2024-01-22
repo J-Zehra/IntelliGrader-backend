@@ -243,7 +243,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
 
-            if shading_percentage > 55:
+            if shading_percentage > 50:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
