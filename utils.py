@@ -238,14 +238,14 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             roi_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
             roi_dilate = cv2.dilate(roi_erode, kernel, iterations=2)
             roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21,
-                                               42)
-            roi = roi_thresh[y - r + 2:y + r - 2, x - r + 2:x + r - 2]
+                                               50)
+            roi = roi_thresh[y - r + 3:y + r - 3, x - r + 3:x + r - 3]
 
             total_pixels = roi.size
             shaded_pixels = np.count_nonzero(roi)
             shading_percentage = (shaded_pixels / total_pixels) * 100
 
-            if shading_percentage > 60:
+            if shading_percentage > 50:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
