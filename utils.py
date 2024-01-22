@@ -7,6 +7,7 @@ def process(image, parts, correct_answer_indices):
     template_marker = cv2.imread("marker.jpg", 0)
     template_marker_2 = cv2.imread("marker2.jpg", 0)
     answer_indices = []
+    kernel = np.ones((2, 2), np.uint8)
     roll_number = None
 
     # PROCESS ROLL NUMBER SECTION
@@ -14,11 +15,13 @@ def process(image, parts, correct_answer_indices):
     if roll_number_section is None:
         return {"status": "error", "message": "Roll number not detected"}
 
-    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_gray, (21, 21), 0.6)
+    roll_number_section_erode = cv2.erode(roll_number_section_gray, kernel, iterations=2)
+    roll_number_section_dilate = cv2.dilate(roll_number_section_erode, kernel, iterations=1)
+    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_dilate, (21, 21), 0.6)
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=10
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=50, param2=10, minRadius=5, maxRadius=8
     )
 
     if roll_number_circles is not None:
@@ -43,7 +46,9 @@ def process(image, parts, correct_answer_indices):
     if bubble_section is None:
         return {"status": "error", "message": "Bubble Section Not Detected"}
 
-    bubble_section_blur = cv2.GaussianBlur(bubble_section_gray, (21, 21), 1)
+    bubble_section_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
+    bubble_section_dilate = cv2.dilate(bubble_section_erode, kernel, iterations=1)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section_dilate, (21, 21), 0.6)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
@@ -113,6 +118,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
     max_intensity_index_1 = -1
     max_average_intensity_2 = -1
     max_intensity_index_2 = -1
+    kernel = np.ones((2, 2), np.uint8)
 
     # Extract and process the first 10 circles
     for i in range(10):
@@ -121,8 +127,9 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
 
         # Extract region of interest (ROI)
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 0.8)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
+        roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
+        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                                        cv2.THRESH_BINARY_INV, 51, 36)
 
         # Compute nonzero pixel values
@@ -143,8 +150,9 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
 
         # Extract region of interest (ROI)
         roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_blur = cv2.GaussianBlur(roll_number_roi_gray, (21, 21), 0.8)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
+        roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
+        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                                        cv2.THRESH_BINARY_INV, 51, 36)
 
         # Compute nonzero pixel values
@@ -161,7 +169,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
     return roll_number_indices
 
 
-def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 2), scale_step=0.1):
+def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 1.6), scale_step=0.1):
     section = None
     section_gray = None
     image_gray = cv2.cvtColor(sample_image, cv2.COLOR_BGR2GRAY)
@@ -222,18 +230,20 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
 
     for i in range(0, len(sorted_circles), number_of_choices):
         question_circles = sorted_circles[i:i + number_of_choices]
+        kernel = np.ones((2, 2), np.uint8)
         shaded_index = -1
         shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
-            roi_blur = cv2.GaussianBlur(roi_gray, (21, 21), 1)
-            roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
+            roi_erode = cv2.erode(roi_gray, kernel, iterations=1)
+            roi_dilate = cv2.dilate(roi_erode, kernel, iterations=1)
+            roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
 
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
 
-            if shading_percentage > 25:
+            if shading_percentage > 55:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
