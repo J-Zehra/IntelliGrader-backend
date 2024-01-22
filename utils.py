@@ -226,24 +226,24 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 1.6
 
 def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
     answer_indices = []
+    kernel = np.ones((1, 1), np.uint8)
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
 
     for i in range(0, len(sorted_circles), number_of_choices):
         question_circles = sorted_circles[i:i + number_of_choices]
-        kernel = np.ones((2, 2), np.uint8)
         shaded_index = -1
         shading_count = 0
 
         for index, (x, y, r) in enumerate(question_circles):
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
-            roi_erode = cv2.erode(roi_gray, kernel, iterations=1)
-            roi_dilate = cv2.dilate(roi_erode, kernel, iterations=1)
+            roi_erode = cv2.erode(roi_gray, kernel, iterations=2)
+            roi_dilate = cv2.dilate(roi_erode, kernel, iterations=2)
             roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 42)
 
-            average_intensity = cv2.mean(roi_thresh)[0]
+            average_intensity = np.mean(roi_thresh)
             shading_percentage = (average_intensity / 255) * 100
 
-            if shading_percentage > 40:
+            if shading_percentage > 35:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
