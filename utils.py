@@ -130,7 +130,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
         roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 51, 36)
+                                                       cv2.THRESH_BINARY_INV, 21, 42)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
@@ -153,7 +153,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
         roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
         roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 51, 36)
+                                                       cv2.THRESH_BINARY_INV, 21, 42)
 
         # Compute nonzero pixel values
         average_intensity = cv2.mean(roll_number_roi_thresh)[0]
@@ -238,12 +238,12 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             roi_gray = bubble_section_gray[y - r:y + r, x - r:x + r]
             roi_erode = cv2.erode(roi_gray, kernel, iterations=1)
             roi_dilate = cv2.dilate(roi_erode, kernel, iterations=1)
-            roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 41, 40)
+            roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 42)
 
             average_intensity = cv2.mean(roi_thresh)[0]
             shading_percentage = (average_intensity / 255) * 100
 
-            if shading_percentage > 50:
+            if shading_percentage > 40:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
