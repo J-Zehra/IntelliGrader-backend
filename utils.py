@@ -17,7 +17,7 @@ def process(image, parts, correct_answer_indices):
 
     roll_number_section_erode = cv2.erode(roll_number_section_gray, kernel, iterations=2)
     roll_number_section_dilate = cv2.dilate(roll_number_section_erode, kernel, iterations=1)
-    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_dilate, (21, 21), 0.6)
+    roll_number_section_blur = cv2.GaussianBlur(roll_number_section_dilate, (21, 21), 1)
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
@@ -48,11 +48,11 @@ def process(image, parts, correct_answer_indices):
 
     bubble_section_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
     bubble_section_dilate = cv2.dilate(bubble_section_erode, kernel, iterations=1)
-    bubble_section_blur = cv2.GaussianBlur(bubble_section_dilate, (21, 21), 0.6)
+    bubble_section_blur = cv2.GaussianBlur(bubble_section_dilate, (21, 21), 1)
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=4, maxRadius=8
+        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=8
     )
 
     if circles is not None:
@@ -237,7 +237,8 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
         for index, (x, y, r) in enumerate(question_circles):
             roi_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
             roi_dilate = cv2.dilate(roi_erode, kernel, iterations=2)
-            roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21,
+            roi_blur = cv2.GaussianBlur(roi_dilate, (21, 21), 1)
+            roi_thresh = cv2.adaptiveThreshold(roi_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21,
                                                50)
             roi = roi_thresh[y - r + 2:y + r - 2, x - r + 2:x + r - 2]
 
@@ -245,7 +246,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             shaded_pixels = np.count_nonzero(roi)
             shading_percentage = (shaded_pixels / total_pixels) * 100
 
-            if shading_percentage > 50:
+            if shading_percentage > 45:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
