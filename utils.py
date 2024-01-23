@@ -126,14 +126,15 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         x, y, r = circle_1
 
         # Extract region of interest (ROI)
-        roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
+        roll_number_roi_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
         roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 21, 42)
+        roll_number_blur = cv2.GaussianBlur(roll_number_roi_dilate, (21, 21), 0.4)
+        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                       cv2.THRESH_BINARY_INV, 21, 50)
+        roi = roll_number_roi_thresh[y - r + 1:y + r - 1, x - r + 1:x + r - 1]
 
         # Compute nonzero pixel values
-        average_intensity = cv2.mean(roll_number_roi_thresh)[0]
+        average_intensity = cv2.mean(roi)[0]
 
         # Update max intensity and index
         if average_intensity > max_average_intensity_1:
@@ -149,14 +150,15 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         x, y, r = circle_2
 
         # Extract region of interest (ROI)
-        roll_number_roi_gray = roll_number_section_gray[y - r:y + r, x - r:x + r]
-        roll_number_roi_erode = cv2.erode(roll_number_roi_gray, kernel, iterations=1)
+        roll_number_roi_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
         roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 21, 42)
+        roll_number_blur = cv2.GaussianBlur(roll_number_roi_dilate, (21, 21), 0.4)
+        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                       cv2.THRESH_BINARY_INV, 21, 50)
+        roi = roll_number_roi_thresh[y - r + 1:y + r - 1, x - r + 1:x + r - 1]
 
         # Compute nonzero pixel values
-        average_intensity = cv2.mean(roll_number_roi_thresh)[0]
+        average_intensity = cv2.mean(roi)[0]
 
         # Update max intensity and index
         if average_intensity > max_average_intensity_2:
