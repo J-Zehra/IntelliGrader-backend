@@ -239,7 +239,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             roi_dilate = cv2.dilate(roi_erode, kernel, iterations=2)
             roi_thresh = cv2.adaptiveThreshold(roi_dilate, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21,
                                                50)
-            roi = roi_thresh[y - r + 3:y + r - 3, x - r + 3:x + r - 3]
+            roi = roi_thresh[y - r + 2:y + r - 2, x - r + 2:x + r - 2]
 
             total_pixels = roi.size
             shaded_pixels = np.count_nonzero(roi)
