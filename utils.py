@@ -38,9 +38,6 @@ def process(image, parts, correct_answer_indices):
 
         roll_number = int(''.join(map(str, extracted_indices)))
 
-        print(f"Extracted Roll Number Indices: {extracted_indices}")
-        print(f"Roll Number: {roll_number}")
-
     # PROCESS BUBBLE SECTION
     bubble_section, bubble_section_gray = extract_section(image, template_marker, 10)
     if bubble_section is None:
@@ -60,8 +57,6 @@ def process(image, parts, correct_answer_indices):
         detected_circles = int(len(circles))
         number_of_circles = int(
             sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
-        print(f"{number_of_circles} circles")
-        print(f"Detected {detected_circles} circles")
 
         if number_of_circles != detected_circles:
             return {"status": "error", "message": "Bubble section not detected"}
@@ -141,9 +136,6 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
             max_average_intensity_1 = average_intensity
             max_intensity_index_1 = i
 
-        # print(f"Non-zero pixel value [{i}]: {nonzero_pixels}")
-        print(f"Intensity value [{i}]: {average_intensity}")
-
     # Extract and process the first 10 circles
     for i in range(10, 20):
         circle_2 = sorted_circles[i]
@@ -164,8 +156,6 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
         if average_intensity > max_average_intensity_2:
             max_average_intensity_2 = average_intensity
             max_intensity_index_2 = i
-
-        print(f"Intensity value 2 [{i}]: {average_intensity}")
 
     roll_number_indices = [max_intensity_index_1, max_intensity_index_2 % 10]
     return roll_number_indices
@@ -203,7 +193,6 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 1.6
         pick = non_max_suppression(np.array(rects))
 
         if len(pick) == 4:
-            print(f"[INFO] {len(pick)} matched locations in scale {scale}")
 
             # Extract the section inside the four detected templates with a margin
             min_x = min([startX for (startX, _, _, _) in pick]) + margin
@@ -258,10 +247,10 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             cv2.putText(bubble_section, str(1 + index), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
                         (225, 0, 0), 1)
 
-        if shading_count > 1:
-            answer_indices.append(-2)
-        elif shading_count == 1:
+        if shading_count == 1:
             answer_indices.append(shaded_index)
+        elif shading_count > 1:
+            answer_indices.append(-2)
         else:
             answer_indices.append(-1)
 
@@ -328,7 +317,6 @@ def get_shading_percentage(roi):
     total_pixels = roi.size
     shaded_pixels = cv2.countNonZero(roi)
     shading_percentage = (shaded_pixels / total_pixels) * 100
-    # print(shading_percentage)
 
     return shading_percentage
 
@@ -355,10 +343,5 @@ def check(extracted_answers, correct_answers, parts):
 
         total_perfect_score += part['points'] * part_size
         current_index += part_size
-
-    print(f"Number of Correct: {number_of_correct}")
-    print(f"Number of Incorrect: {number_of_incorrect}")
-    print(f"Total Score: {total_score}")
-    print(f"Total Perfect Score: {total_perfect_score}")
 
     return number_of_correct, number_of_incorrect, total_score, total_perfect_score
