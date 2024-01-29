@@ -57,26 +57,5 @@ def handle_grade(data):
     emit("grade_result", response_data)
 
 
-@socketio.on("video")
-def handle_grade(data):
-    image = data["image"]
-    template_marker = cv2.imread("marker.jpg", 0)
-    template_marker_2 = cv2.imread("marker2.jpg", 0)
-
-    image_array = np.frombuffer(image, dtype=np.uint8)
-    image_original = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-
-    roll_number_section, roll_number_section_gray = utils.extract_section(image_original, template_marker_2, 5)
-    bubble_section, bubble_section_gray = utils.extract_section(image_original, template_marker, 10)
-
-    if roll_number_section is not None and bubble_section is not None:
-        response_data = {
-            "bubble_section": bubble_section,
-            "roll_number_section": roll_number_section
-        }
-
-        emit("detected", response_data)
-
-
 if __name__ == '__main__':
     socketio.run(app, debug=True)
