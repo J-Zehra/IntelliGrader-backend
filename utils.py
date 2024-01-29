@@ -2,6 +2,24 @@ import cv2
 import numpy as np
 from imutils.object_detection import non_max_suppression
 
+ROLL_NUMBER_CIRCLE_PARAMS = {
+    "dp": 1,
+    "minDist": 10,
+    "param1": 50,
+    "param2": 10,
+    "minRadius": 5,
+    "maxRadius": 8
+}
+
+BUBBLE_SECTION_CIRCLE_PARAMS = {
+    "dp": 1,
+    "minDist": 10,
+    "param1": 100,
+    "param2": 10,
+    "minRadius": 5,
+    "maxRadius": 8
+}
+
 
 def process(image, parts, correct_answer_indices):
     template_marker = cv2.imread("marker.jpg", 0)
@@ -13,7 +31,7 @@ def process(image, parts, correct_answer_indices):
     # PROCESS ROLL NUMBER SECTION
     roll_number_section, roll_number_section_gray = extract_section(image, template_marker_2, 5)
     if roll_number_section is None:
-        return {"status": "error", "message": "Roll number not detected"}
+        return {"status": "error", "message": "Roll number not detected."}
 
     roll_number_section_erode = cv2.erode(roll_number_section_gray, kernel, iterations=2)
     roll_number_section_dilate = cv2.dilate(roll_number_section_erode, kernel, iterations=1)
@@ -21,16 +39,15 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     roll_number_circles = cv2.HoughCircles(
-        roll_number_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=50, param2=10, minRadius=5, maxRadius=8
+        roll_number_section_blur, cv2.HOUGH_GRADIENT, **ROLL_NUMBER_CIRCLE_PARAMS
     )
 
     if roll_number_circles is not None:
         roll_number_circles = np.round(roll_number_circles[0, :]).astype("int")
         detected_roll_number_circles = int(len(roll_number_circles))
-        print(f"Detected {detected_roll_number_circles} roll number circles")
 
         if detected_roll_number_circles != 20:
-            return {"status": "error", "message": "Roll number not detected."}
+            return {"status": "error", "message": "Roll number has missing circles."}
 
         sorted_roll_number_circles = sorted(roll_number_circles, key=lambda circle: (circle[1], circle[0]))
         final_sorted_roll_number_circles = sort(10, sorted_roll_number_circles)
@@ -41,7 +58,7 @@ def process(image, parts, correct_answer_indices):
     # PROCESS BUBBLE SECTION
     bubble_section, bubble_section_gray = extract_section(image, template_marker, 10)
     if bubble_section is None:
-        return {"status": "error", "message": "Bubble Section Not Detected"}
+        return {"status": "error", "message": "Bubble section not detected."}
 
     bubble_section_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
     bubble_section_dilate = cv2.dilate(bubble_section_erode, kernel, iterations=1)
@@ -49,7 +66,7 @@ def process(image, parts, correct_answer_indices):
 
     # DETECT CIRCLES
     circles = cv2.HoughCircles(
-        bubble_section_blur, cv2.HOUGH_GRADIENT, dp=1, minDist=10, param1=100, param2=10, minRadius=5, maxRadius=8
+        bubble_section_blur, cv2.HOUGH_GRADIENT, **BUBBLE_SECTION_CIRCLE_PARAMS
     )
 
     if circles is not None:
@@ -59,100 +76,67 @@ def process(image, parts, correct_answer_indices):
             sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
 
         if number_of_circles != detected_circles:
-            return {"status": "error", "message": "Bubble section not detected"}
+            return {"status": "error", "message": "Bubble section has missing circles."}
 
         sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right = sort_circles(circles,
                                                                                                   bubble_section_gray,
                                                                                                   parts)
 
-        try:
-            choices_1 = parts[0]["numberOfChoices"]
-        except IndexError:
-            choices_1 = 1
+        choices = [part.get("numberOfChoices", 1) for part in parts]
 
-        try:
-            choices_2 = parts[1]["numberOfChoices"]
-        except IndexError:
-            choices_2 = 1
+        answer_indices = None
+        for i, (sorted_circles, choices) in enumerate(
+                zip([sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right], choices), start=1):
+            answer_indices = extract_answer_indices(sorted_circles, choices, bubble_section)
 
-        try:
-            choices_3 = parts[2]["numberOfChoices"]
-        except IndexError:
-            choices_3 = 1
+        number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
+                                                                                         correct_answer_indices, parts)
+        return {
+            "processed_image": bubble_section,
+            "original_image": image,
+            "answer_indices": answer_indices,
+            "number_of_correct": number_of_correct,
+            "number_of_incorrect": number_of_incorrect,
+            "total_score": total_score,
+            "total_perfect_score": total_perfect_score,
+            "roll_number": roll_number,
+            "status": "success"
+        }
+    else:
+        return {"status": "error", "message": "No circles detected"}
 
-        try:
-            choices_4 = parts[3]["numberOfChoices"]
-        except IndexError:
-            choices_4 = 1
 
-        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section)
-        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section)
-        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section)
-        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section)
+def process_roll_number_circle(circle, roll_number_section_gray, kernel):
+    x, y, r = circle
 
-        answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
+    roll_number_roi_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
+    roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
+    roll_number_blur = cv2.GaussianBlur(roll_number_roi_dilate, (21, 21), 0.4)
+    roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                   cv2.THRESH_BINARY_INV, 21, 50)
+    roi = roll_number_roi_thresh[y - r + 1:y + r - 1, x - r + 1:x + r - 1]
 
-    number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
-                                                                                     correct_answer_indices, parts)
+    average_intensity = cv2.mean(roi)[0]
 
-    return {
-        "processed_image": bubble_section,
-        "original_image": image,
-        "answer_indices": answer_indices,
-        "number_of_correct": number_of_correct,
-        "number_of_incorrect": number_of_incorrect,
-        "total_score": total_score,
-        "total_perfect_score": total_perfect_score,
-        "roll_number": roll_number,
-        "status": "success"
-    }
+    return average_intensity
 
 
 def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
-    max_average_intensity_1 = -1
-    max_intensity_index_1 = -1
-    max_average_intensity_2 = -1
-    max_intensity_index_2 = -1
     kernel = np.ones((2, 2), np.uint8)
 
-    # Extract and process the first 10 circles
+    max_average_intensity_1, max_intensity_index_1 = -1, -1
+    max_average_intensity_2, max_intensity_index_2 = -1, -1
+
     for i in range(10):
-        circle_1 = sorted_circles[i]
-        x, y, r = circle_1
+        average_intensity = process_roll_number_circle(sorted_circles[i], roll_number_section_gray, kernel)
 
-        # Extract region of interest (ROI)
-        roll_number_roi_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
-        roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
-        roll_number_blur = cv2.GaussianBlur(roll_number_roi_dilate, (21, 21), 0.4)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 21, 50)
-        roi = roll_number_roi_thresh[y - r + 1:y + r - 1, x - r + 1:x + r - 1]
-
-        # Compute nonzero pixel values
-        average_intensity = cv2.mean(roi)[0]
-
-        # Update max intensity and index
         if average_intensity > max_average_intensity_1:
             max_average_intensity_1 = average_intensity
             max_intensity_index_1 = i
 
-    # Extract and process the first 10 circles
     for i in range(10, 20):
-        circle_2 = sorted_circles[i]
-        x, y, r = circle_2
+        average_intensity = process_roll_number_circle(sorted_circles[i], roll_number_section_gray, kernel)
 
-        # Extract region of interest (ROI)
-        roll_number_roi_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
-        roll_number_roi_dilate = cv2.dilate(roll_number_roi_erode, kernel, iterations=1)
-        roll_number_blur = cv2.GaussianBlur(roll_number_roi_dilate, (21, 21), 0.4)
-        roll_number_roi_thresh = cv2.adaptiveThreshold(roll_number_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                       cv2.THRESH_BINARY_INV, 21, 50)
-        roi = roll_number_roi_thresh[y - r + 1:y + r - 1, x - r + 1:x + r - 1]
-
-        # Compute nonzero pixel values
-        average_intensity = cv2.mean(roi)[0]
-
-        # Update max intensity and index
         if average_intensity > max_average_intensity_2:
             max_average_intensity_2 = average_intensity
             max_intensity_index_2 = i
@@ -193,7 +177,6 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.4, 1.6
         pick = non_max_suppression(np.array(rects))
 
         if len(pick) == 4:
-
             # Extract the section inside the four detected templates with a margin
             min_x = min([startX for (startX, _, _, _) in pick]) + margin
             min_y = min([startY for (_, startY, _, _) in pick]) + margin
@@ -258,25 +241,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
 
 
 def sort_circles(circles, cropped_bubble_image, parts):
-    try:
-        choices_1 = parts[0]["numberOfChoices"]
-    except IndexError:
-        choices_1 = 1
-
-    try:
-        choices_2 = parts[1]["numberOfChoices"]
-    except IndexError:
-        choices_2 = 1
-
-    try:
-        choices_3 = parts[2]["numberOfChoices"]
-    except IndexError:
-        choices_3 = 1
-
-    try:
-        choices_4 = parts[3]["numberOfChoices"]
-    except IndexError:
-        choices_4 = 1
+    choices = [part.get("numberOfChoices", 1) for part in parts]
 
     # Calculate the center of the image
     center_x = cropped_bubble_image.shape[1] // 2
@@ -295,10 +260,10 @@ def sort_circles(circles, cropped_bubble_image, parts):
     bottom_right_circles = sorted(bottom_right_circles, key=lambda circle: (circle[1], circle[0]))
 
     # Sort the circles for each quadrant based on your specific sorting function (sort)
-    sorted_top_left = sort(choices_1, top_left_circles)
-    sorted_bottom_left = sort(choices_2, bottom_left_circles)
-    sorted_top_right = sort(choices_3, top_right_circles)
-    sorted_bottom_right = sort(choices_4, bottom_right_circles)
+    sorted_top_left = sort(choices[0], top_left_circles)
+    sorted_bottom_left = sort(choices[1], bottom_left_circles)
+    sorted_top_right = sort(choices[2], top_right_circles)
+    sorted_bottom_right = sort(choices[3], bottom_right_circles)
 
     return sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right
 
