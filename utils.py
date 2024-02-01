@@ -15,7 +15,7 @@ BUBBLE_SECTION_CIRCLE_PARAMS = {
     "dp": 1,
     "minDist": 10,
     "param1": 100,
-    "param2": 10,
+    "param2": 8,
     "minRadius": 5,
     "maxRadius": 8
 }
