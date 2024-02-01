@@ -16,7 +16,7 @@ BUBBLE_SECTION_CIRCLE_PARAMS = {
     "minDist": 10,
     "param1": 100,
     "param2": 10,
-    "minRadius": 4,
+    "minRadius": 5,
     "maxRadius": 8
 }
 
@@ -24,7 +24,6 @@ BUBBLE_SECTION_CIRCLE_PARAMS = {
 def process(image, parts, correct_answer_indices):
     template_marker = cv2.imread("marker.jpg", 0)
     template_marker_2 = cv2.imread("marker2.jpg", 0)
-    answer_indices = []
     kernel = np.ones((2, 2), np.uint8)
     roll_number = None
 
@@ -33,8 +32,8 @@ def process(image, parts, correct_answer_indices):
     if roll_number_section is None:
         return {"status": "error", "message": "Roll number not detected."}
 
-    roll_number_section_erode = cv2.erode(roll_number_section_gray, kernel, iterations=2)
-    roll_number_section_dilate = cv2.dilate(roll_number_section_erode, kernel, iterations=1)
+    roll_number_section_erode = cv2.erode(roll_number_section_gray, kernel, iterations=1)
+    roll_number_section_dilate = cv2.dilate(roll_number_section_erode, kernel, iterations=0)
     roll_number_section_blur = cv2.GaussianBlur(roll_number_section_dilate, (21, 21), 1)
 
     # DETECT CIRCLES
@@ -60,8 +59,8 @@ def process(image, parts, correct_answer_indices):
     if bubble_section is None:
         return {"status": "error", "message": "Bubble section not detected."}
 
-    bubble_section_erode = cv2.erode(bubble_section_gray, kernel, iterations=2)
-    bubble_section_dilate = cv2.dilate(bubble_section_erode, kernel, iterations=1)
+    bubble_section_erode = cv2.erode(bubble_section_gray, kernel, iterations=1)
+    bubble_section_dilate = cv2.dilate(bubble_section_erode, kernel, iterations=0)
     bubble_section_blur = cv2.GaussianBlur(bubble_section_dilate, (21, 21), 1)
 
     # DETECT CIRCLES
