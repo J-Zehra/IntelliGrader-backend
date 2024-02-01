@@ -75,7 +75,6 @@ def process(image, parts, correct_answer_indices):
         number_of_circles = int(
             sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
 
-
         print(f"Expected {number_of_circles}")
         print(f"Detected {detected_circles}")
 
@@ -86,12 +85,32 @@ def process(image, parts, correct_answer_indices):
                                                                                                   bubble_section_gray,
                                                                                                   parts)
 
-        choices = [part.get("numberOfChoices", 1) for part in parts]
+        try:
+            choices_1 = parts[0]["numberOfChoices"]
+        except IndexError:
+            choices_1 = 1
 
-        answer_indices = None
-        for i, (sorted_circles, choices) in enumerate(
-                zip([sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right], choices), start=1):
-            answer_indices = extract_answer_indices(sorted_circles, choices, bubble_section)
+        try:
+            choices_2 = parts[1]["numberOfChoices"]
+        except IndexError:
+            choices_2 = 1
+
+        try:
+            choices_3 = parts[2]["numberOfChoices"]
+        except IndexError:
+            choices_3 = 1
+
+        try:
+            choices_4 = parts[3]["numberOfChoices"]
+        except IndexError:
+            choices_4 = 1
+
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section)
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section)
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section)
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section)
+
+        answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
         number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
                                                                                          correct_answer_indices, parts)
@@ -245,7 +264,25 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
 
 
 def sort_circles(circles, cropped_bubble_image, parts):
-    choices = [part.get("numberOfChoices", 1) for part in parts]
+    try:
+        choices_1 = parts[0]["numberOfChoices"]
+    except IndexError:
+        choices_1 = 1
+
+    try:
+        choices_2 = parts[1]["numberOfChoices"]
+    except IndexError:
+        choices_2 = 1
+
+    try:
+        choices_3 = parts[2]["numberOfChoices"]
+    except IndexError:
+        choices_3 = 1
+
+    try:
+        choices_4 = parts[3]["numberOfChoices"]
+    except IndexError:
+        choices_4 = 1
 
     # Calculate the center of the image
     center_x = cropped_bubble_image.shape[1] // 2
@@ -264,10 +301,10 @@ def sort_circles(circles, cropped_bubble_image, parts):
     bottom_right_circles = sorted(bottom_right_circles, key=lambda circle: (circle[1], circle[0]))
 
     # Sort the circles for each quadrant based on your specific sorting function (sort)
-    sorted_top_left = sort(choices[0], top_left_circles)
-    sorted_bottom_left = sort(choices[1], bottom_left_circles)
-    sorted_top_right = sort(choices[2], top_right_circles)
-    sorted_bottom_right = sort(choices[3], bottom_right_circles)
+    sorted_top_left = sort(choices_1, top_left_circles)
+    sorted_bottom_left = sort(choices_2, bottom_left_circles)
+    sorted_top_right = sort(choices_3, top_right_circles)
+    sorted_bottom_right = sort(choices_4, bottom_right_circles)
 
     return sorted_top_left, sorted_bottom_left, sorted_top_right, sorted_bottom_right
 
