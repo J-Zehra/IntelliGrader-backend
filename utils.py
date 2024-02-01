@@ -76,7 +76,7 @@ def process(image, parts, correct_answer_indices):
             sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
 
 
-        print(f"Expected {number_of_circles|}")
+        print(f"Expected {number_of_circles}")
         print(f"Detected {detected_circles}")
 
         if number_of_circles != detected_circles:
