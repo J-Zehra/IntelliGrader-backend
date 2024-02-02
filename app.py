@@ -28,6 +28,7 @@ def handle_grade(data):
                 "message": result["message"],
                 "status": "failed",
                 "image": image,
+                "index": index,
             }
             emit("progress", error_response)
             continue
