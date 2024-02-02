@@ -15,7 +15,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 @socketio.on("grade")
 def handle_grade(data):
-    response_data = []
 
     for index, image in enumerate(data["images"], start=1):
         image_array = np.frombuffer(image, dtype=np.uint8)
@@ -30,14 +29,14 @@ def handle_grade(data):
                 "status": "failed",
                 "image": image,
             }
-            response_data.append(error_response)
-            emit("progress", {"index": index})
+            emit("progress", error_response)
             continue
 
         _, buffer = cv2.imencode(".webp", result["processed_image"])
         binary_image = buffer.tobytes()
 
-        response_data.append({
+        response_data = {
+            "index": index,
             "status": "success",
             "processed_image": binary_image,
             "answer_indices": result["answer_indices"],
@@ -46,12 +45,13 @@ def handle_grade(data):
             "total_score": result["total_score"],
             "total_perfect_score": result["total_perfect_score"],
             "roll_number": result["roll_number"]
-        })
+        }
 
-        emit("progress", {"index": index})
+        emit("progress", response_data)
         socketio.sleep(0.1)
 
-    emit("grade_result", response_data)
+    if len(data["images"]) > 1:
+        emit("finished", {"status": "finished"})
 
 
 if __name__ == '__main__':
