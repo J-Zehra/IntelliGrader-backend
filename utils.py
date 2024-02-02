@@ -167,7 +167,7 @@ def extract_roll_number_indices(sorted_circles, roll_number_section_gray):
     return roll_number_indices
 
 
-def extract_section(sample_image, template_marker, margin, scale_range=(0.8, 2), scale_step=0.1):
+def extract_section(sample_image, template_marker, margin, scale_range=(0.7, 2), scale_step=0.1):
     section = None
     section_gray = None
     image_gray = cv2.cvtColor(sample_image, cv2.COLOR_BGR2GRAY)
@@ -184,7 +184,7 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.8, 2),
         result = cv2.matchTemplate(image_gray, resized_template, cv2.TM_CCOEFF_NORMED)
 
         # Set a threshold to consider a match
-        threshold = 0.7
+        threshold = 0.8
         (yCoords, xCoords) = np.where(result >= threshold)
 
         # initialize our list of rectangles
