@@ -184,7 +184,7 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.8, 2),
         result = cv2.matchTemplate(image_gray, resized_template, cv2.TM_CCOEFF_NORMED)
 
         # Set a threshold to consider a match
-        threshold = 0.8
+        threshold = 0.7
         (yCoords, xCoords) = np.where(result >= threshold)
 
         # initialize our list of rectangles
