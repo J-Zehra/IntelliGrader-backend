@@ -16,6 +16,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 @socketio.on("grade")
 def handle_grade(data):
 
+    print(data["parts"])
+
     for index, image in enumerate(data["images"], start=1):
         image_array = np.frombuffer(image, dtype=np.uint8)
         image_original = cv2.imdecode(image_array, cv2.IMREAD_COLOR)

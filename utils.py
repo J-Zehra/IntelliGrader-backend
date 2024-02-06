@@ -111,8 +111,14 @@ def process(image, parts, correct_answer_indices):
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
-        number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
-                                                                                         correct_answer_indices, parts)
+        if parts[0]["format"] == "MDAT":
+            number_of_correct, number_of_incorrect, total_score, total_perfect_score = checkMDAT(answer_indices,
+                                                                                                 correct_answer_indices,
+                                                                                                 parts)
+        else:
+            number_of_correct, number_of_incorrect, total_score, total_perfect_score = check(answer_indices,
+                                                                                             correct_answer_indices,
+                                                                                             parts)
         return {
             "processed_image": bubble_section,
             "original_image": image,
@@ -348,5 +354,42 @@ def check(extracted_answers, correct_answers, parts):
 
         total_perfect_score += part['points'] * part_size
         current_index += part_size
+
+    return number_of_correct, number_of_incorrect, total_score, total_perfect_score
+
+
+def checkMDAT(extracted_answers, correct_answers, parts):
+    number_of_correct = 0
+    number_of_incorrect = 0
+    total_score = 0
+    total_perfect_score = 0
+
+    current_index = 0
+
+    for part in parts:
+        part_size = part['totalNumber']
+        part_answers = extracted_answers[current_index:current_index + part_size]
+        part_correct = correct_answers[current_index:current_index + part_size]
+
+        for correct, student in zip(part_correct, part_answers):
+            if correct == student:
+                number_of_correct += 1
+                # Find the corresponding choice in 'mdat' and add its point to total_score
+                for mdat_item in part['mdat']:
+                    if mdat_item['number'] == correct + 1:  # Correcting the index
+                        total_score += mdat_item['choices'][student]['point']
+            else:
+                number_of_incorrect += 1
+
+        # Calculate perfect score for the part outside the loop
+        current_part_perfect_score = sum(
+            mdat_item['choices'][correct]['point'] for mdat_item, correct in zip(part['mdat'], part_correct))
+        total_perfect_score += current_part_perfect_score
+        current_index += part_size
+
+    print(number_of_correct)
+    print(number_of_incorrect)
+    print(total_score)
+    print(total_perfect_score)
 
     return number_of_correct, number_of_incorrect, total_score, total_perfect_score
