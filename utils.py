@@ -364,19 +364,21 @@ def checkMDAT(extracted_answers, correct_answers, parts):
         part_correct = correct_answers[current_index:current_index + part_size]
 
         for correct, student in zip(part_correct, part_answers):
-            if student != -1 or student != -2:
-                total_score = sum(
-                    mdat_item['choices'][student]['point'] for mdat_item, correct in zip(part['mdat'], part_answers))
+            # Skip calculation if extracted answer index is -1 or -2
+            if student not in [-1, -2]:
+                # Find the corresponding choice in 'mdat' and add its point to total_score
+                current_choice_point = part['mdat'][correct]['choices'][student]['point']
+                total_score += current_choice_point
+
             if correct == student:
                 number_of_correct += 1
-                # Find the corresponding choice in 'mdat' and add its point to total_score
             else:
                 number_of_incorrect += 1
 
-        # Calculate perfect score for the part outside the loop
         current_part_perfect_score = sum(
             mdat_item['choices'][correct]['point'] for mdat_item, correct in zip(part['mdat'], part_correct))
         total_perfect_score += current_part_perfect_score
+
         current_index += part_size
 
     print(number_of_correct)
