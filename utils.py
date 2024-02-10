@@ -365,8 +365,8 @@ def checkMDAT(extracted_answers, correct_answers, parts):
 
         for correct, student in zip(part_correct, part_answers):
             if student != -1 or student != -2:
-                for mdat_item in part['mdat']:
-                    total_score += mdat_item['choices'][student]['point']
+                total_score = sum(
+                    mdat_item['choices'][student]['point'] for mdat_item, correct in zip(part['mdat'], part_answers))
             if correct == student:
                 number_of_correct += 1
                 # Find the corresponding choice in 'mdat' and add its point to total_score
