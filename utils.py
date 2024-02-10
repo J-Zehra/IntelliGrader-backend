@@ -324,14 +324,6 @@ def sort(column, circles):
     return sorted_cols
 
 
-def get_shading_percentage(roi):
-    total_pixels = roi.size
-    shaded_pixels = cv2.countNonZero(roi)
-    shading_percentage = (shaded_pixels / total_pixels) * 100
-
-    return shading_percentage
-
-
 def check(extracted_answers, correct_answers, parts):
     number_of_correct = 0
     number_of_incorrect = 0
@@ -372,12 +364,13 @@ def checkMDAT(extracted_answers, correct_answers, parts):
         part_correct = correct_answers[current_index:current_index + part_size]
 
         for correct, student in zip(part_correct, part_answers):
-            if correct == student:
-                number_of_correct += 1
-                # Find the corresponding choice in 'mdat' and add its point to total_score
+            if student != -1 or student != -2:
                 for mdat_item in part['mdat']:
                     if mdat_item['number'] == correct + 1:  # Correcting the index
                         total_score += mdat_item['choices'][student]['point']
+            if correct == student:
+                number_of_correct += 1
+                # Find the corresponding choice in 'mdat' and add its point to total_score
             else:
                 number_of_incorrect += 1
 
