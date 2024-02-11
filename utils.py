@@ -21,7 +21,7 @@ BUBBLE_SECTION_CIRCLE_PARAMS = {
 }
 
 
-def process(image, parts, correct_answer_indices):
+def process(image, parts, correct_answer_indices, threshold):
     template_marker = cv2.imread("marker.jpg", 0)
     template_marker_2 = cv2.imread("marker2.jpg", 0)
     kernel = np.ones((2, 2), np.uint8)
@@ -104,10 +104,10 @@ def process(image, parts, correct_answer_indices):
         except IndexError:
             choices_4 = 1
 
-        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section)
-        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section)
-        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section)
-        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section)
+        part_1_answer_indices = extract_answer_indices(sorted_top_left, choices_1, bubble_section, threshold)
+        part_2_answer_indices = extract_answer_indices(sorted_bottom_left, choices_2, bubble_section, threshold)
+        part_3_answer_indices = extract_answer_indices(sorted_top_right, choices_3, bubble_section, threshold)
+        part_4_answer_indices = extract_answer_indices(sorted_bottom_right, choices_4, bubble_section, threshold)
 
         answer_indices = part_1_answer_indices + part_2_answer_indices + part_3_answer_indices + part_4_answer_indices
 
@@ -226,7 +226,7 @@ def extract_section(sample_image, template_marker, margin, scale_range=(0.7, 2),
     return section, section_gray
 
 
-def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
+def extract_answer_indices(sorted_circles, number_of_choices, bubble_section, threshold):
     answer_indices = []
     kernel = np.ones((1, 1), np.uint8)
     bubble_section_gray = cv2.cvtColor(bubble_section, cv2.COLOR_BGR2GRAY)
@@ -248,7 +248,7 @@ def extract_answer_indices(sorted_circles, number_of_choices, bubble_section):
             shaded_pixels = np.count_nonzero(roi)
             shading_percentage = (shaded_pixels / total_pixels) * 100
 
-            if shading_percentage > 45:
+            if shading_percentage > threshold:
                 shaded_index = index
                 shading_count += 1
                 cv2.circle(bubble_section, (x, y), r, (0, 0, 255), 2)
