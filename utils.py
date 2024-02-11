@@ -69,10 +69,11 @@ def process(image, parts, correct_answer_indices, threshold):
     )
 
     if circles is not None:
+        print(parts)
         circles = np.round(circles[0, :]).astype("int")
         detected_circles = int(len(circles))
         number_of_circles = int(
-            sum(choice["numberOfChoices"] * len(correct_answer_indices) for choice in parts) / len(parts))
+            sum(part['numberOfChoices'] * part['totalNumber'] for part in parts))
 
         print(f"Expected {number_of_circles}")
         print(f"Detected {detected_circles}")
